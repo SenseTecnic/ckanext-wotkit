@@ -17,7 +17,7 @@ _check_access = logic.check_access
 
 import wotkit_proxy
 
-_ckan_user_to_wotkit = {"admin":("root", "aMUSEment2")}
+_ckan_user_to_wotkit = {"admin":("mduppes", "aMUSEment2")}
 #_ckan_user_to_wotkit = {"nooo":("yes", "badpasswd")}
                         
 #_ckan_user_to_wotkit = {}
