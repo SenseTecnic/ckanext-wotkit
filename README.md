@@ -27,4 +27,4 @@ From your local development git repository, add the remote called guiness that l
 
 Then, whenever we want to push to the test server, we can do 
 
-``git push guiness master``
+``git push guiness master`` 
