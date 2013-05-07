@@ -20,7 +20,7 @@ log = getLogger(__name__)
 _wotkit_url = "http://localhost:8080"
 
 def getBasicAuthenticationResponse(url, user, pwd, base_url = _wotkit_url):
-    #Connect to wotkit api with basic authentication
+    """Connect to wotkit api with basic authentication given by user, pwd"""
     auth_handler = urllib2.HTTPBasicAuthHandler()
     auth_handler.add_password(realm="Spring Security Application",
                               uri=base_url,
@@ -32,6 +32,7 @@ def getBasicAuthenticationResponse(url, user, pwd, base_url = _wotkit_url):
     return data
 
 def getSensor(wotkit_user, wotkit_password, sensor_name):
+    """Proxy API call to the wotkit for a given sensor_name"""
     base_url = _wotkit_url
     url = base_url + "/api/sensors/" + sensor_name
     log.debug("Wotkit URL: " + url + ", User: " + wotkit_user + ", Pass: " + wotkit_password)
@@ -39,7 +40,7 @@ def getSensor(wotkit_user, wotkit_password, sensor_name):
     try:
         data = getBasicAuthenticationResponse(url, wotkit_user, wotkit_password)
     except Exception as e:
-        msg = "Failed to open Wotkit url. Message: " + pprint.pformat(e)
+        msg = "Failed to open Wotkit url. Message: " + e.msg
         data = {"Error": msg}
         log.error(msg)
     
