@@ -132,16 +132,26 @@ def wotkit(context, data_dict):
     
     #get username for logged in user
     user = context['user']
-    
-    sensor_name = _get_or_bust(data_dict, "sensor")
-    
+
     wotkit_credentials = None
     if user:
         wotkit_credentials = _get_action("user_wotkit_credentials")(context, data_dict)
         if not wotkit_credentials or not wotkit_credentials["wotkit_id"] or not wotkit_credentials["wotkit_password"]:
             raise logic.NotFound("Wotkit credentials not found for ckan user")
+    
+    sensor_name = data_dict.get("sensor", None)
+    if sensor_name:
+        result = wotkit_proxy.getSensor(wotkit_credentials["wotkit_id"], wotkit_credentials["wotkit_password"], sensor_name)
+    else:
         
-            
-    result = wotkit_proxy.getSensor(wotkit_credentials["wotkit_id"], wotkit_credentials["wotkit_password"], sensor_name)
+        # this is api proxy with everything after the api path specified
+        url_path = _get_or_bust(data_dict, "url")
+        method = data_dict.get("method", None)
+        data = data_dict.get("data", None)
+        
+        if url_path:
+            result = wotkit_proxy.proxyParameters(wotkit_credentials["wotkit_id"], wotkit_credentials["wotkit_password"], url_path, method, data)
+                
+        
     returnJson = {"Ckan User": user, "Wotkit User": wotkit_credentials, "Response": result}
     return returnJson
