@@ -21,6 +21,12 @@ log = getLogger(__name__)
 
 _wotkit_url = "http://localhost:8080"
 
+def initWotkitUrl(wotkit_url):
+    global _wotkit_url 
+    if not wotkit_url:
+        raise Exception("No wotkit_url found in *.ini config file!")
+    _wotkit_url = wotkit_url
+
 def getBasicAuthenticationResponse(url, user, pwd, http_method = "GET", data = None):
     """Connect to wotkit api with basic authentication given by user, pwd"""
     

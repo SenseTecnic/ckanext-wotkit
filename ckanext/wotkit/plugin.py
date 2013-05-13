@@ -15,6 +15,7 @@ from ckan.plugins import IConfigurer
 from ckan.plugins import ITemplateHelpers
 
 import ckanext.wotkit.actions
+import ckanext.wotkit.wotkit_proxy
 log = getLogger(__name__)
 
 import pprint
@@ -33,6 +34,7 @@ class WotkitPlugin(SingletonPlugin):
     def update_config(self, config):
         """Add template directory of this extension to override the default ckan templates"""
         #Probably have to add directories for css / jscript files later
+        ckanext.wotkit.wotkit_proxy.initWotkitUrl(config.get("wotkit_url"))
         toolkit.add_template_directory(config, "theme/templates")
         
 
