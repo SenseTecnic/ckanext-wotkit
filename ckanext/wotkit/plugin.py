@@ -25,7 +25,7 @@ class WotkitPlugin(SingletonPlugin):
     """
 
     implements(IConfigurable, inherit=True)
-    implements(IConfigurer, inherit=True)
+    implements(IConfigurer, inherit=True)   
     implements(IRoutes, inherit=True)
     implements(IActions, inherit=True)
     implements(IAuthFunctions, inherit=True)
@@ -34,13 +34,31 @@ class WotkitPlugin(SingletonPlugin):
     def update_config(self, config):
         """Add template directory of this extension to override the default ckan templates"""
         #Probably have to add directories for css / jscript files later
-        ckanext.wotkit.wotkit_proxy.initWotkitUrl(config.get("wotkit_url"))
         toolkit.add_template_directory(config, "theme/templates")
         
 
     def configure(self, config):
         """Implements IConfigurable plugin that initializes db tables.
         This gets called after the SQLAlchemy engine is initialized"""
+        
+        # Check config file for wotkit related configs and set them
+        if not config.get("wotkit.wotkit_url"):
+            raise Exception("No wotkit.url in configuration .ini file")
+        if not config.get("wotkit.api_url"):
+            raise Exception("No wotkit.api_url in configuration .ini file")
+        if not config.get("wotkit.processor_url"):
+            raise Exception("No wotkit.processor_url in configuration .ini file")
+        
+        if not config.get("wotkit.harvest_id"):
+            raise Exception("No wotkit.harvest_id in configuration .ini file")
+        if not config.get("wotkit.harvest_key"):
+            raise Exception("No wotkit.harvest_key in configuration .ini file")
+
+        import sensors.sensetecnic as sensetecnic
+        # Somewhat redundant for now.. initializing in both places
+        sensetecnic.init(config.get("wotkit.wotkit_url"), config.get("wotkit.api_url"), config.get("wotkit.processor_url"), config.get("wotkit.harvest_id"), config.get("wotkit.harvest_key"))                
+        ckanext.wotkit.wotkit_proxy.initWotkitUrls(config.get("wotkit.wotkit_url"), config.get("wotkit.api_url"), config.get("wotkit.processor_url"))
+        
         from model import WotkitUser
         WotkitUser.initDB()
         
@@ -51,6 +69,8 @@ class WotkitPlugin(SingletonPlugin):
                 "user_update": ckanext.wotkit.actions.user_update,
                 "user_create": ckanext.wotkit.actions.user_create,
                 "wotkit": ckanext.wotkit.actions.wotkit,
+                "wotkit_harvest_module": ckanext.wotkit.actions.wotkit_harvest_module,
+                "wotkit_get_sensor_module_import": ckanext.wotkit.actions.wotkit_get_sensor_module_import,
                 "user_wotkit_credentials": ckanext.wotkit.actions.user_wotkit_credentials}
     
     def get_auth_functions(self):

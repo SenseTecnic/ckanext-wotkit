@@ -17,15 +17,25 @@ import pprint
 
 import requests
 
+import sensors.sensetecnic as sensetecnic
+
 log = getLogger(__name__)
 
-_wotkit_url = "http://localhost:8080"
+_wotkit_url = ""
+_api_url = ""
+_processor_url = ""
 
-def initWotkitUrl(wotkit_url):
+
+def initWotkitUrls(wotkit_url, api_url, processor_url):
     global _wotkit_url 
+    global _api_url
+    global _processor_url
+    
     if not wotkit_url:
         raise Exception("No wotkit_url found in *.ini config file!")
     _wotkit_url = wotkit_url
+    _api_url = api_url
+    _processor_url = processor_url
 
 def getBasicAuthenticationResponse(url, user, pwd, http_method = "GET", data = None):
     """Connect to wotkit api with basic authentication given by user, pwd"""
@@ -56,7 +66,7 @@ def proxyParameters(wotkit_user, wotkit_password, api_path, http_method, data):
     Example api_path= sensors/sensetecnic.mule1
     """
 
-    url = _wotkit_url + "/api/" + api_path
+    url = _api_url + "/" + api_path
         
     try:
         data = getBasicAuthenticationResponse(url, wotkit_user, wotkit_password, http_method, data)
@@ -69,7 +79,7 @@ def proxyParameters(wotkit_user, wotkit_password, api_path, http_method, data):
 def getSensor(wotkit_user, wotkit_password, sensor_name):
     """Proxy API call to the wotkit for a given sensor_name"""
     
-    url = _wotkit_url + "/api/sensors/" + sensor_name
+    url = _api_url + "/sensors/" + sensor_name
     log.debug("Wotkit URL: " + url + ", User: " + wotkit_user + ", Pass: " + wotkit_password)
     
     try:
@@ -78,5 +88,6 @@ def getSensor(wotkit_user, wotkit_password, sensor_name):
         msg = "Failed to open Wotkit url. Message: " + e.message
         data = {"Error": msg}
         log.error(msg)
+
     
     return data

@@ -16,12 +16,14 @@ import ckan.lib.dictization
 import wotkit_proxy
 from model import WotkitUser
 
+from ckan.plugins import toolkit
 
 log = getLogger(__name__)
 _get_or_bust = logic.get_or_bust
 _get_action = logic.get_action
 _check_access = logic.check_access
 
+import importlib
 
 """
 Functions in here are mostly accessible via ckan's action API:
@@ -40,6 +42,11 @@ def ckanAuthorization(context, data_dict):
     
     #Simply check if user is logged in, and also has a wotkit account mapping
     user = context['user']
+    
+    #Skip if authorization provided
+    if not user and data_dict["wotkit_id"] and data_dict["wotkit_password"]:
+        return {'success': True}
+        
     
     if user:
         return {'success': True}
@@ -123,6 +130,21 @@ def user_wotkit_credentials(context, data_dict):
         return_dict = {};
     return return_dict
 
+def _getWotkitCredentials(context, data_dict):
+    """ Handles extraction of wotkit credentials """
+    #get username for logged in user
+    user = context['user']
+
+    wotkit_credentials = {}
+    if all(key in data_dict for key in ("wotkit_id", "wotkit_password")):
+        wotkit_credentials["wotkit_id"] = data_dict["wotkit_id"]
+        wotkit_credentials["wotkit_password"] = data_dict["wotkit_password"]
+        
+    if not wotkit_credentials and user:
+        wotkit_credentials = _get_action("user_wotkit_credentials")(context, data_dict)
+        if not wotkit_credentials or not wotkit_credentials["wotkit_id"] or not wotkit_credentials["wotkit_password"]:
+            raise logic.NotFound("Wotkit credentials not found for ckan user")
+
 @logic.side_effect_free
 def wotkit(context, data_dict):
     """Proxy API to Wotkit
@@ -130,14 +152,7 @@ def wotkit(context, data_dict):
     
     _check_access("wotkit", context, data_dict)
     
-    #get username for logged in user
-    user = context['user']
-
-    wotkit_credentials = None
-    if user:
-        wotkit_credentials = _get_action("user_wotkit_credentials")(context, data_dict)
-        if not wotkit_credentials or not wotkit_credentials["wotkit_id"] or not wotkit_credentials["wotkit_password"]:
-            raise logic.NotFound("Wotkit credentials not found for ckan user")
+    wotkit_credentials = _getWotkitCredentials(context, data_dict)
     
     sensor_name = data_dict.get("sensor", None)
     if sensor_name:
@@ -155,3 +170,57 @@ def wotkit(context, data_dict):
         
     returnJson = {"Ckan User": user, "Wotkit User": wotkit_credentials, "Response": result}
     return returnJson
+
+def wotkit_harvest_module(context, data_dict):
+    """ Harvests sensor data and pushes it into wotkit and creates a package in ckan.
+    The Harvesting mechanism searches for a module that matches the "module" field provided in data_dict in ./sensors/
+    The modules must have a method called "updateWotkit()" defined, which must return a list of sensor names that were updated
+    """
+
+    # Only the harvest user can load modules for now, module must be supplied in data_dict
+    module = _get_action("wotkit_get_sensor_module_import")(context, data_dict)
+    
+    # All wotkit modules defined with updateWotkit function (ducktyping)
+    # Must return list of sensor names that corresponds to {WOTKIT_API_URL}/sensors/{SENSOR_NAME_HERE} for wotkit api access
+    updated_sensors = []
+    try:
+        updated_sensors = module.updateWotkit()
+    except Exception as e:
+        log.error("Failed to get and update wotkit for module " + data_dict["module"] + ". " + e.message)
+        raise e
+    
+    package_dict = {
+                    'resources': []
+    }
+
+    # Somewhat redundant step that attempts to fetch all sensor data from wotkit that was just pushed
+    import sensors.sensetecnic as sensetecnic
+    wotkit_url = sensetecnic.getWotkitApiUrl()
+    
+    for sensorName in updated_sensors:
+        # Use default wotkit credentials supplied by .ini config that is loaded into sensetecnic module
+        try:
+            sensor_dict = sensetecnic.getSensor(sensorName, None, None)
+        except Exception as e:
+            log.warning("Failed to get sensor: " + sensorName + " from wotkit. Skipping resource creation on ckan")
+            continue
+    
+        package_dict['resources'].append({'url': wotkit_url + "/sensors/" + sensorName,
+                                          'name': sensorName,
+                                          'format': 'application/json',
+                                          'description': sensor_dict["description"],
+                                          '__extras': sensor_dict})
+    
+    return package_dict
+
+
+def wotkit_get_sensor_module_import(context, data_dict):
+    user = context["user"]
+    if not user == "harvest":
+        raise Exception("Only harvest user can call harvest modules")
+    
+    if not "module" in data_dict:
+        raise Exception("No module defined for harvesting wotkit sensor data.")
+    
+    module = importlib.import_module("ckanext.wotkit.sensors." + data_dict["module"], "ckanext")
+    return module
