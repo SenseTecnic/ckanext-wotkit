@@ -144,6 +144,7 @@ def _getWotkitCredentials(context, data_dict):
         wotkit_credentials = _get_action("user_wotkit_credentials")(context, data_dict)
         if not wotkit_credentials or not wotkit_credentials["wotkit_id"] or not wotkit_credentials["wotkit_password"]:
             raise logic.NotFound("Wotkit credentials not found for ckan user")
+    return wotkit_credentials
 
 @logic.side_effect_free
 def wotkit(context, data_dict):
