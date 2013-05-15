@@ -169,7 +169,7 @@ def wotkit(context, data_dict):
             result = wotkit_proxy.proxyParameters(wotkit_credentials["wotkit_id"], wotkit_credentials["wotkit_password"], url_path, method, data)
                 
         
-    returnJson = {"Ckan User": user, "Wotkit User": wotkit_credentials, "Response": result}
+    returnJson = {"Response": result}
     return returnJson
 
 def wotkit_harvest_module(context, data_dict):
