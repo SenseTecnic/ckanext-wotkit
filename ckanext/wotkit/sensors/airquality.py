@@ -173,9 +173,9 @@ def checkWOTKITSensorsExist(station, fields):
             field_list.append({"name":name,"type":"NUMBER",
                                "required":False,"longName":longname})
             
-        field_list.append({"name":"lat","type":"NUMBER","required":True,"longName":"latitude"})
-        field_list.append({"name":"lng","type":"NUMBER","required":True,"longName":"longitude"})
-        field_list.append({"name":"value","type":"NUMBER","required":True,"longName":"Data"})
+        field_list.append({"name":"lat","type":"NUMBER","required":False,"longName":"latitude"})
+        field_list.append({"name":"lng","type":"NUMBER","required":False,"longName":"longitude"})
+        field_list.append({"name":"value","type":"NUMBER","required":False,"longName":"Data"})
         field_list.append({"name":"message","type":"STRING","required":False,"longName":"Message"})
 
         sensor.update({"fields":field_list})

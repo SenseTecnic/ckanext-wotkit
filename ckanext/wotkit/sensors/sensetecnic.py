@@ -110,8 +110,14 @@ def getSensor(sensorName, user, password):
     
     url = STS_API_URL+'/sensors/'+sensorName
     req = urllib2.Request(url,None,headers)
+    log.debug("getting sensor: " + url)
     try:
+        
         result = urllib2.urlopen(req)
+        if result.code == 204:
+            log.debug("success getting sensor")
+        else:
+            log.debug("failed getting sensor, code: " + result.code)
         sensor = json.load(result)
         
     except urllib2.HTTPError, e:
@@ -146,8 +152,13 @@ def registerSensor(sensor, user, password):
     
     url = STS_API_URL+'/sensors'
     req = urllib2.Request(url,jsonSensor, headers)
+    log.debug("registering sensor: " + url)
     try:
-        urllib2.urlopen(req)
+        response = urllib2.urlopen(req)
+        if response.code == 201:
+            log.debug("success registering sensor")
+        else:
+            print "Not Success: Code: " + response.getCode()
     except urllib2.HTTPError, e:
         if (e.code != 204):
             print '%s while registering: %s' % (e,sensor["name"])
@@ -156,6 +167,7 @@ def registerSensor(sensor, user, password):
     except urllib2.URLError, e:
         print 'error - registering sensor: %s' % (sensor["name"])
         raise SenseTecnicError('URLError while registering %s' % (sensor["name"]),e)
+    
     
     return 0
 
