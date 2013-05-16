@@ -152,7 +152,7 @@ def registerSensor(sensor, user, password):
         if (e.code != 204):
             print '%s while registering: %s' % (e,sensor["name"])
             raise SenseTecnicError(e,e)
-               
+            print e.message
     except urllib2.URLError, e:
         print 'error - registering sensor: %s' % (sensor["name"])
         raise SenseTecnicError('URLError while registering %s' % (sensor["name"]),e)
