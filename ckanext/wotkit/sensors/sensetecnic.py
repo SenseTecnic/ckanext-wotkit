@@ -108,7 +108,7 @@ def getSensor(sensorName, user, password):
         'Authorization': "Basic %s" % base64string
     }
     
-    url = STS_API_URL+'/sensors/'+sensorName
+    url = STS_API_URL+'/sensors/'+user + '.' + sensorName
     req = urllib2.Request(url,None,headers)
     log.debug("getting sensor: " + url)
     try:
