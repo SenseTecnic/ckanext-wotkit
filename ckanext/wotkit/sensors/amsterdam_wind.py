@@ -26,7 +26,7 @@ def getSensorSchema():
     return schema
 
 def getSensorRegistration():
-    sensor = {  
+    sensor = {
               "name":SENSOR_NAME,
               "longName":"Amsterdam Wind Data",
               "description":"Sensor taken from openweathermap.org of wind data in Amsterdam",
@@ -34,7 +34,7 @@ def getSensorRegistration():
               "longitude": "4.8922",
               "private":False,
               "tags":["wind", "Amsterdam"],
-              "fields":getSensorSchema() 
+              "fields":getSensorSchema()
               }
     return sensor
     
@@ -59,8 +59,4 @@ def updateWotkit():
     wotkit_data = {"value": value, "direction": direction}
     
     sensetecnic.sendData(SENSOR_NAME, None, None, wotkit_data)    
-    if r.ok:
-        sys.stdout.write('Posted value:%d / direction:%d to wotkit.\n' % (value, direction))
-        return [SENSOR_NAME]
-    else:
-        raise requests.HTTPError()
+

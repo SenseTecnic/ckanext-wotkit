@@ -71,6 +71,7 @@ class SenseTecnicError(Exception):
 
 def sendData(sensor, user, password, attributes):
     #use SenseTecnic
+    print "Sending data to wotkit for sensor " + sensor + ": " + str(attributes)
     sendDataSenseTecnic(sensor, user, password, attributes);
 
 def sendDataSenseTecnic(sensor, user, password, attributes):

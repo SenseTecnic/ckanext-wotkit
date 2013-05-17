@@ -66,7 +66,7 @@ def getPollutionData ():
             station_id = station['id']
             sensor_name = "aq_%s" % (station['id'])
             sensors.append(sensor_name)
-            registeredStation = last_station_update.has_key(station_id) 
+            registeredStation = last_station_update.has_key(station_id)
             
             #If station 'unregistered', save station information
             station_info= {}
