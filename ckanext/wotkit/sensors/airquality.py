@@ -181,7 +181,7 @@ def checkWOTKITSensorsExist(station, fields):
         sensor.update({"fields":field_list})
         
         try:
-            sensetecnic.registerSensor(sensor, key_id , key_password);
+            sensetecnic.checkAndRegisterSensor(sensor, key_id , key_password);
             print ("Created WoTKit Sensor:",sensor_name)
         except sensetecnic.SenseTecnicError as e:
             print "ERROR: %s" % (e)

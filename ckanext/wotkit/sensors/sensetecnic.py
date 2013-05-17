@@ -97,7 +97,7 @@ def sendDataSenseTecnic(sensor, user, password, attributes):
         return -1
     return 0
 
-def getSensor(sensorName, user, password):
+def getSensor(sensorName, user = None, password = None):
     # send authorization headers preemptively otherwise we get redirected to a login page
     user, password = _checkPassword(user, password)
     base64string = base64.encodestring('%s:%s' % (user, password))[:-1]
@@ -137,9 +137,17 @@ def getSensor(sensorName, user, password):
     
     return sensor
 
-def registerSensor(sensor, user, password):
+def checkAndRegisterSensor(sensor, user = None, password = None):
+    try:
+        sensor = getSensor(sensor, user, password)
+        return True if sensor else False
+    except Exception as e:
+        log.debug("Probably not found. Attempting to register new sensor")
+        
+    
+        #only register non-existing ones
     jsonSensor = json.dumps(sensor)
-
+    log.debug( "JSON DUMP of register: " + jsonSensor)
     user, password = _checkPassword(user, password)
     # send authorization headers preemptively otherwise we get redirected to a login page
     base64string = base64.encodestring('%s:%s' % (user, password))[:-1]
@@ -149,6 +157,7 @@ def registerSensor(sensor, user, password):
         'Content-Type': 'application/json',
         'Authorization': "Basic %s" % base64string
     }
+    log.debug( "Headers: " + str(headers))
     
     url = STS_API_URL+'/sensors'
     req = urllib2.Request(url,jsonSensor, headers)
@@ -157,6 +166,7 @@ def registerSensor(sensor, user, password):
         response = urllib2.urlopen(req)
         if response.code == 201:
             log.debug("success registering sensor")
+            return True
         else:
             print "Not Success: Code: " + response.getCode()
     except urllib2.HTTPError, e:
@@ -167,8 +177,7 @@ def registerSensor(sensor, user, password):
     except urllib2.URLError, e:
         print 'error - registering sensor: %s' % (sensor["name"])
         raise SenseTecnicError('URLError while registering %s' % (sensor["name"]),e)
-    
-    
-    return 0
+
+    return False
 
 
