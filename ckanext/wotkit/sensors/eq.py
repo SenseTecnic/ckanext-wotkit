@@ -64,7 +64,7 @@ def getEQ():
     firstTime = True
     
     s = 'http://earthquake.usgs.gov/eqcenter/catalogs/1day-M2.5.xml'
-    SENSOR_NAME = 'eq'
+    SENSOR_NAME = 'earthquake2'
 
     f = getURL(s)
     #f = open('eq1.html')
