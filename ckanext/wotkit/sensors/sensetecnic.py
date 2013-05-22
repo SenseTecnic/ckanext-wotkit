@@ -11,6 +11,7 @@ import random
 import time
 import datetime
 import simplejson as json
+import requests
 
 import logging
 log = logging.getLogger(__name__)
@@ -75,31 +76,23 @@ def sendData(sensor, user, password, attributes):
     sendDataSenseTecnic(sensor, user, password, attributes);
 
 def sendDataSenseTecnic(sensor, user, password, attributes):
-    encoded_args = urllib.urlencode(attributes)
+    
 
     user, password = _checkPassword(user, password)
+    url = STS_API_URL+'/sensors/'+sensor+'/data'
 
     # send authorization headers premptively otherwise we get redirected to a login page
-    base64string = base64.encodestring('%s:%s' % (user, password))[:-1]
-        
-    headers = {
-        'User-Agent': 'httplib',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': "Basic %s" % base64string
-    }
-    
-    url = STS_API_URL+'/sensors/'+sensor+'/data'
-    req = urllib2.Request(url,encoded_args,headers)
+
     try:
-        response = urllib2.urlopen(req)
-        if response.code == 201:
+        response = requests.post(url = url, auth=(user, password), data = attributes)
+        if response.status_code == 201:
             print "Success updating wotkit for sensor: " + sensor
         else:
-            print "Not successful in updating sensor: error code " + str(response.code)
+            print "Not successful in updating sensor: error code " + str(response.status_code)
             
-    except urllib2.URLError, e:
+    except Exception, e:
         print 'error - sending event to sensor: %s' % (sensor)
-        print e.reason
+        print e.message
         return -1
     return 0
 
