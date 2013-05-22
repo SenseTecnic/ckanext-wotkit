@@ -91,7 +91,12 @@ def sendDataSenseTecnic(sensor, user, password, attributes):
     url = STS_API_URL+'/sensors/'+sensor+'/data'
     req = urllib2.Request(url,encoded_args,headers)
     try:
-        urllib2.urlopen(req)
+        response = urllib2.urlopen(req)
+        if response.code == 201:
+            print "Success updating wotkit for sensor: " + sensor
+        else:
+            print "Not successful in updating sensor: error code " + str(response.code)
+            
     except urllib2.URLError, e:
         print 'error - sending event to sensor: %s' % (sensor)
         print e.reason
@@ -115,10 +120,10 @@ def getSensor(sensorName, user = None, password = None):
     try:
         
         result = urllib2.urlopen(req)
-        if result.code == 204:
-            log.debug("success getting sensor")
+        if result.code == 200:
+            log.debug("success getting sensor " + sensorName)
         else:
-            log.debug("failed getting sensor, code: " + result.code)
+            log.debug("failed getting sensor, code: " + str(result.code))
         sensor = json.load(result)
         
     except urllib2.HTTPError, e:
@@ -135,6 +140,8 @@ def getSensor(sensorName, user = None, password = None):
         print 'error - getting sensor: %s' % (sensorName)
         raise SenseTecnicError('URLError while registering %s' % (sensorName),e)
         return
+    except Exception as e:
+        print "Error: " + str(e)
     
     return sensor
 
