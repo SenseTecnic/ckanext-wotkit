@@ -98,7 +98,7 @@ def updateWotkit():
     except Exception as e:
         print "Error in retrieving data from london instant bus api"
         
-    
+    return [SENSOR_NAME]
     
     
     
