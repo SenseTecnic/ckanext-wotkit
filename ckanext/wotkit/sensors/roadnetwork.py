@@ -26,8 +26,8 @@ def getSensorSchema():
 def getSensorRegistration():
     sensor = {
               "name":SENSOR_NAME,
-              "longName":"Amsterdam Wind Data",
-              "description":"Sensor taken from openweathermap.org of wind data in Amsterdam",
+              "longName":"UK Traffic Travel Time",
+              "description":"Sensor data parsed from http://hatrafficinfo.dft.gov.uk/feeds/datex/England/JourneyTimeData/content.xml",
               "latitude": "51.506178",
               "longitude": "-0.113993",
               "private":False,
