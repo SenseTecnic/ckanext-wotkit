@@ -206,7 +206,9 @@ def wotkit_harvest_module(context, data_dict):
             log.warning("Failed to get sensor: " + sensorName + " from wotkit. Skipping resource creation on ckan")
             continue
     
-        package_dict['resources'].append({'url': wotkit_url + "/sensors/" + sensorName,
+        # for now we hardcode harvester user
+        wotkit_user = sensetecnic.STS_ID
+        package_dict['resources'].append({'url': wotkit_url + "/sensors/" + wotkit_user + "." + sensorName,
                                           'name': sensorName,
                                           'format': 'application/json',
                                           'description': sensor_dict["description"],

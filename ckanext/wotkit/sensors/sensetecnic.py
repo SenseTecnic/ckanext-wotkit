@@ -96,7 +96,7 @@ def sendDataSenseTecnic(sensor, user, password, attributes):
         return -1
     return 0
 
-def getSensor(sensorName, user = None, password = None):
+def getSensor(sensorName, user = STS_ID, password = STS_KEY):
     # send authorization headers preemptively otherwise we get redirected to a login page
     user, password = _checkPassword(user, password)
     base64string = base64.encodestring('%s:%s' % (user, password))[:-1]
