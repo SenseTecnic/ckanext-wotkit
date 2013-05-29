@@ -28,11 +28,6 @@ def init(wotkit_url, api_url, processor_url, id, key):
     Initialize globals of this module. For now only used for harvesting into wotkit
     """
     global STS_WOTKIT_URL, STS_API_URL, STS_ID, STS_KEY
-    log.debug("Setting wotkit url: " + wotkit_url)
-    log.debug("Setting wotkit api url: " + api_url)
-    log.debug("Setting wotkit id: " + id)
-    log.debug("Setting wotkit key: " + key)
-    log.debug("Setting wotkit processor url: " + processor_url)
     
     STS_WOTKIT_URL = wotkit_url
     STS_API_URL = api_url 
