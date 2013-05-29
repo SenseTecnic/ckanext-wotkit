@@ -60,7 +60,8 @@ class WotkitPlugin(SingletonPlugin):
         ckanext.wotkit.wotkit_proxy.initWotkitUrls(config.get("wotkit.wotkit_url"), config.get("wotkit.api_url"), config.get("wotkit.processor_url"))
         
         from model import WotkitUser
-        #WotkitUser.initDB()
+        log.debug("Initializing wotkit db")
+        WotkitUser.initDB()
         
     def get_actions(self):
         """Configure ckan action string -> function mapping for this extension"""
