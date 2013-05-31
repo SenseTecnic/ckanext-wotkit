@@ -6,8 +6,8 @@ import requests
 import logging
 log = logging.getLogger(__name__)
 
-DATA_GET_URI = "http://hatrafficinfo.dft.gov.uk/feeds/datex/England/CurrentRoadworks/content.xml"
-SENSOR_NAME = "roadworks"
+DATA_GET_URI = "http://hatrafficinfo.dft.gov.uk/feeds/datex/England/FutureRoadworks/content.xml"
+SENSOR_NAME = "future-roadworks"
 
 def getSensorSchema():
     schema = [
@@ -27,8 +27,8 @@ def getSensorSchema():
 def getSensorRegistration():
     sensor = {
               "name":SENSOR_NAME,
-              "longName":"England Road Works",
-              "description":"Sensor data parsed from http://hatrafficinfo.dft.gov.uk/feeds/datex/England/CurrentRoadworks/content.xml",
+              "longName":"Future England Road Works",
+              "description":"Sensor data parsed from http://hatrafficinfo.dft.gov.uk/feeds/datex/England/FutureRoadworks/content.xml",
               "latitude": "51.506178",
               "longitude": "-0.113995",
               "private":False,

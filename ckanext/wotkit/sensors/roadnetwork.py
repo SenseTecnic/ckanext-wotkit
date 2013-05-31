@@ -9,6 +9,20 @@ log = logging.getLogger(__name__)
 DATA_GET_URI = "http://hatrafficinfo.dft.gov.uk/feeds/datex/England/JourneyTimeData/content.xml"
 SENSOR_NAME = "highway-traffic"
 
+location_info = None
+
+def initLocationInfo():
+    r = requests.get("http://hatrafficinfo.dft.gov.uk/feeds/datex/England/PredefinedLocationJourneyTimeSections/content.xml")
+    global location_info
+    location_info = BeautifulSoup(r.text, "xml")
+    
+def findLocationInfo(id):
+    sensor = location_info.findAll("predefinedLocation", id=id)
+    # Just get first lat lng for now?
+    lat = sensor[0].findAll("latitude")[0].string
+    lng = sensor[0].findAll("longitude")[0].string
+    return (lat, lng)
+
 def getSensorSchema():
     schema = [
               {"name":"lat","type":"NUMBER","required":False,"longName":"latitude"},
@@ -48,6 +62,8 @@ def checkSensorExist():
 
 def updateWotkit():
     checkSensorExist()
+    
+    initLocationInfo()
     
     r = requests.get(DATA_GET_URI)
     text = r.text

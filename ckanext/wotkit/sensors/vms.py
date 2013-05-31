@@ -9,6 +9,19 @@ log = logging.getLogger(__name__)
 DATA_GET_URI = "http://hatrafficinfo.dft.gov.uk/feeds/datex/England/VariableMessageSign/content.xml"
 SENSOR_NAME = "variable-message-sign"
 
+location_info = None
+
+def initLocationInfo():
+    r = requests.get("http://hatrafficinfo.dft.gov.uk/feeds/datex/England/PredefinedLocationVMSAndMatrix/content.xml")
+    global location_info
+    location_info = BeautifulSoup(r.text, "xml")
+    
+def findLocationInfo(id):
+    sensor = location_info.findAll("predefinedLocation", id=id)
+    lat = sensor[0].findAll("latitude")[0].string
+    lng = sensor[0].findAll("longitude")[0].string
+    return (lat, lng)
+
 def getSensorSchema():
     schema = [
               {"name":"lat","type":"NUMBER","required":False,"longName":"latitude"},
@@ -51,6 +64,7 @@ def checkSensorExist():
 def updateWotkit():
     checkSensorExist()
     
+    initLocationInfo()
     r = requests.get(DATA_GET_URI)
     text = r.text
     parsedXML = BeautifulSoup(text, "xml")
@@ -69,6 +83,8 @@ def updateWotkit():
             wotkit_data["message"] = " ".join(data.vmsLegend)
             wotkit_data["probability"] = data.probabilityOfOccurrence.string
             wotkit_data["reason"] = data.reasonForSetting.value.string
+            
+            wotkit_data["lat"], wotkit_data["lng"] = findLocationInfo(wotkit_data["locationref"])
               
         except Exception as e:
             log.debug("Failed to parse traffic info" + str(e))
