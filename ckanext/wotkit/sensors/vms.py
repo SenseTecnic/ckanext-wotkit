@@ -2,25 +2,29 @@ from bs4 import BeautifulSoup, NavigableString
 import sensetecnic
 import requests
 
-
 import logging
 log = logging.getLogger(__name__)
 
 DATA_GET_URI = "http://hatrafficinfo.dft.gov.uk/feeds/datex/England/VariableMessageSign/content.xml"
 SENSOR_NAME = "variable-message-sign"
 
-location_info = None
+
+location_map = {}
 
 def initLocationInfo():
+    print "init location info.."
     r = requests.get("http://hatrafficinfo.dft.gov.uk/feeds/datex/England/PredefinedLocationVMSAndMatrix/content.xml")
-    global location_info
+    
     location_info = BeautifulSoup(r.text, "xml")
+    sensors = location_info.findAll("predefinedLocation", attrs={"id": True})
+    global location_map
+    for sensor in sensors:
+        location_map[sensor["id"]] = (sensor.find("latitude").string, sensor.find("longitude").string)
+
+    print "done init location info.."
     
 def findLocationInfo(id):
-    sensor = location_info.findAll("predefinedLocation", id=id)
-    lat = sensor[0].findAll("latitude")[0].string
-    lng = sensor[0].findAll("longitude")[0].string
-    return (lat, lng)
+    return location_map[id]
 
 def getSensorSchema():
     schema = [
@@ -65,9 +69,11 @@ def updateWotkit():
     checkSensorExist()
     
     initLocationInfo()
+    
     r = requests.get(DATA_GET_URI)
     text = r.text
     parsedXML = BeautifulSoup(text, "xml")
+    combined_data = []
     for data in parsedXML.findAll("situationRecord"):
         wotkit_data = {}
         try:
@@ -85,12 +91,13 @@ def updateWotkit():
             wotkit_data["reason"] = data.reasonForSetting.value.string
             
             wotkit_data["lat"], wotkit_data["lng"] = findLocationInfo(wotkit_data["locationref"])
-              
+            wotkit_data["timestamp"] = sensetecnic.getWotkitTimeStamp()
+            combined_data.append(wotkit_data)
         except Exception as e:
             log.debug("Failed to parse traffic info" + str(e))
-        try:
-            sensetecnic.sendData(SENSOR_NAME, None, None, wotkit_data)
-        except Exception as e:
-            log.debug("Failed to update wotkit sensor data")
+    try:
+        sensetecnic.sendBulkData(SENSOR_NAME, None, None, combined_data)
+    except Exception as e:
+        log.debug("Failed to update wotkit sensor data")
         
     return [SENSOR_NAME]

@@ -1,7 +1,7 @@
 from bs4 import BeautifulSoup, NavigableString
 import sensetecnic
 import requests
-
+import datetime
 
 import logging
 log = logging.getLogger(__name__)
@@ -20,7 +20,11 @@ def getSensorSchema():
               {"name":"recordedtime","type":"STRING","required":False,"longName":"Recorded Time"},
               {"name":"comment","type":"STRING","required":False,"longName":"Comments"},
               {"name":"impact","type":"STRING","required":False,"longName":"Impact on traffic"},
-              {"name":"occurrence","type":"STRING","required":False,"longName":"Probability of occurrence"}
+              {"name":"occurrence","type":"STRING","required":False,"longName":"Probability of occurrence"},
+              {"name":"latfrom","type":"NUMBER","required":False,"longName":"latitude from"},
+              {"name":"lngfrom","type":"NUMBER","required":False,"longName":"longitude from"},
+              {"name":"latto","type":"NUMBER","required":False,"longName":"latitude to"},
+              {"name":"lngto","type":"NUMBER","required":False,"longName":"longitude to"}
               ]
     return schema
 
@@ -28,7 +32,7 @@ def getSensorRegistration():
     sensor = {
               "name":SENSOR_NAME,
               "longName":"Current planned events that affect traffic",
-              "description":"Sensor data parsed from hhttp://hatrafficinfo.dft.gov.uk/feeds/datex/England/CurrentPlanned/content.xml",
+              "description":"Sensor data parsed from http://hatrafficinfo.dft.gov.uk/feeds/datex/England/CurrentPlanned/content.xml",
               "latitude": "51.506178",
               "longitude": "-0.113995",
               "private":False,
@@ -36,7 +40,6 @@ def getSensorRegistration():
               "fields":getSensorSchema()
               }
     return sensor
-    
 
 def checkSensorExist():
     sensor_registration_schema = getSensorRegistration()
@@ -53,11 +56,24 @@ def updateWotkit():
     r = requests.get(DATA_GET_URI)
     text = r.text
     parsedXML = BeautifulSoup(text, "xml")
+    combined_data = []
     for data in parsedXML.findAll("situationRecord"):
         wotkit_data = {}
         try:
-            wotkit_data["lat"] = data.groupOfLocations.locationContainedInGroup.tpegpointLocation.framedPoint.pointCoordinates.latitude.string
-            wotkit_data["lng"] = data.groupOfLocations.locationContainedInGroup.tpegpointLocation.framedPoint.pointCoordinates.longitude.string
+            location = data.groupOfLocations.locationContainedInGroup.tpegpointLocation
+            from_location = location.find("from")
+            to_location = location.find("to")
+            try:
+                wotkit_data["lat"] = location.framedPoint.pointCoordinates.latitude.string
+                wotkit_data["lng"] = location.framedPoint.pointCoordinates.longitude.string
+                wotkit_data["latfrom"] = from_location.pointCoordinates.latitude.string
+                wotkit_data["lngfrom"] = from_location.pointCoordinates.longitude.string                
+                wotkit_data["latto"] = to_location.pointCoordinates.latitude.string
+                wotkit_data["lngto"] = to_location.pointCoordinates.longitude.string
+            except Exception as e:
+                wotkit_data["lat"] = location.point.pointCoordinates.latitude.string
+                wotkit_data["lng"] = location.point.pointCoordinates.longitude.string
+                
             wotkit_data["value"] = data.impact.impactDetails.numberOfOperationalLanes.string
             wotkit_data["updatedtime"] = data.situationRecordVersionTime.string
             wotkit_data["restrictedlanes"] = data.impact.impactDetails.numberOfLanesRestricted.string
@@ -67,12 +83,14 @@ def updateWotkit():
             wotkit_data["impact"] = data.impact.impactOnTraffic.string
             wotkit_data["occurrence"] = data.probabilityOfOccurrence.string
             
+            wotkit_data["timestamp"] = sensetecnic.getWotkitTimeStamp()
+            combined_data.append(wotkit_data)
         except Exception as e:
             log.debug("Failed to parse single traffic data: " + str(e))
-        try:
-            sensetecnic.sendData(SENSOR_NAME, None, None, wotkit_data)
-        except Exception as e:
-            log.debug("Failed to update wotkit sensor data")
-        
+    try:
+        sensetecnic.sendBulkData(SENSOR_NAME, None, None, combined_data)
+    except Exception as e:
+        log.debug("Failed to update wotkit sensor data")
+    
     return [SENSOR_NAME]
 

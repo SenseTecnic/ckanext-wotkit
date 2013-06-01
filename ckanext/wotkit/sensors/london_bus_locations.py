@@ -18,7 +18,7 @@ def getDataSchema():
               {"name":"StopPointName", "type": "STRING", "required":False, "longName":"StopPointName"},
               {"name":"StopID", "type": "STRING", "required":False, "longName":"StopID"},
               {"name":"Towards", "type": "STRING", "required":False, "longName":"Bus is headed towards"},
-              {"name":"Bearing", "type": "STRING", "required":False, "longName":"Direction the bus is travelling"},
+              {"name":"Bearing", "type": "STRING", "required":False, "longName":"Direction the bus is traveling"},
               {"name":"lat","type":"NUMBER","required":False,"longName":"latitude"},
               {"name":"lng","type":"NUMBER","required":False,"longName":"longitude"},
               {"name":"VisitNumber", "type": "STRING", "required":False, "longName":"Indicates a stop is visited the first time"},
@@ -73,8 +73,11 @@ def updateWotkit():
     r = None
     try:
         req = urllib2.urlopen(DATA_GET_URI)
-        for x in range(0,100):
+        combined_data = []
+        for x in range(0,300):
             line = req.readline().strip('[]\r\n ')
+            if not line: 
+                break
             retrieved_fields = line.split(',')
             schema = getDataSchema()
             result = {}
@@ -84,16 +87,18 @@ def updateWotkit():
                         print "Schema length does not match retrieved data."
                         continue
                     for (counter, field) in enumerate(schema):
-                        result[field["name"]] = retrieved_fields[counter+1]
+                        result[field["name"]] = retrieved_fields[counter+1].strip('"\\')
                         
                     result["value"] = result["EstimatedTime"]
                     print "value: " + str(result["value"])
-                    sensetecnic.sendData(SENSOR_NAME, None, None, result)    
+                    
+                    result["timestamp"] = sensetecnic.getWotkitTimeStamp()
+                    combined_data.append(result)
                    
             except Exception as e:
                 print "err"
             print str(len(result)) + ", " + pprint.pformat(result)
-        
+        sensetecnic.sendBulkData(SENSOR_NAME, None, None, combined_data)    
         #r = requests.get(DATA_GET_URI, timeout=0.4, stream=True)
     except Exception as e:
         print "Error in retrieving data from london instant bus api"

@@ -12,7 +12,7 @@ import time
 import datetime
 import simplejson as json
 import requests
-
+from datetime import datetime
 import logging
 log = logging.getLogger(__name__)
 
@@ -44,6 +44,9 @@ def getWotkitApiUrl():
 def getWotkitProcessorUrl():
     return STS_PROCESSOR_URL
 
+def getWotkitTimeStamp():
+    return datetime.utcnow().isoformat() + "Z"
+#format("%Y-%m-%dT%H:%M:%SZ")
 
 def _checkPassword(user, password):
     """ If user or password is empty, change it to the default configured credentials 
@@ -70,6 +73,27 @@ def sendData(sensor, user, password, attributes):
     print "Sending data to wotkit for sensor " + sensor + ": " + str(attributes)
     sendDataSenseTecnic(sensor, user, password, attributes);
 
+def sendBulkData(sensor, user, password, attributes):
+    json_data = json.dumps(attributes)
+    
+    user, password = _checkPassword(user, password)
+    url = STS_API_URL+'/sensors/'+sensor+'/data'
+
+    # send authorization headers premptively otherwise we get redirected to a login page
+
+    try:
+        response = requests.put(url = url, auth=(user, password), data = json_data, headers = {"content-type": "application/json"})
+        if response.status_code == 204:
+            print "Success updating wotkit for sensor: " + sensor
+        else:
+            print "Not successful in updating sensor: error code " + str(response.status_code)
+            
+    except Exception, e:
+        print 'error - sending event to sensor: %s' % (sensor)
+        print e.message
+        return -1
+    return 0
+
 def sendDataSenseTecnic(sensor, user, password, attributes):
     
 
@@ -93,53 +117,33 @@ def sendDataSenseTecnic(sensor, user, password, attributes):
 
 def getSensor(sensorName, user = STS_ID, password = STS_KEY):
     # send authorization headers preemptively otherwise we get redirected to a login page
-    user, password = _checkPassword(user, password)
-    base64string = base64.encodestring('%s:%s' % (user, password))[:-1]
-        
-    headers = {
-        'User-Agent': 'httplib',
-        'Content-Type': 'application/json',
-        'Authorization': "Basic %s" % base64string
-    }
+    user, password = _checkPassword(user, password)       
     
-    url = STS_API_URL+'/sensors/'+user + '.' + sensorName
-    req = urllib2.Request(url,None,headers)
-    log.debug("getting sensor: " + url)
+    
     try:
+            
+    
+        url = STS_API_URL+'/sensors/'+user + '.' + sensorName
+        req = requests.get(url, auth = (user, password))
+    
+        log.debug("getting sensor: " + url)
         
-        result = urllib2.urlopen(req)
-        if result.code == 200:
+        if req.status_code == 200:
             log.debug("success getting sensor " + sensorName)
+            return json.loads(req.text)       
         else:
-            log.debug("failed getting sensor, code: " + str(result.code))
-        sensor = json.load(result)
-        
-    except urllib2.HTTPError, e:
-        if (e.code == 404):
-            raise SenseTecnicError('%s does not exist' % (sensorName), e)
-            return
-        
-        if (e.code != 204):
-            print '%s while getting: %s' % (e,sensorName)
-            raise SenseTecnicError(e,e)
-            return
-               
-    except urllib2.URLError, e:
-        print 'error - getting sensor: %s' % (sensorName)
-        raise SenseTecnicError('URLError while registering %s' % (sensorName),e)
-        return
+            log.debug("failed getting sensor, code: " + str(req.status_code))
+            return None
+                
     except Exception as e:
         print "Error: " + str(e)
+        return None
     
-    return sensor
 
 def checkAndRegisterSensor(sensor, user = None, password = None):
-    try:
-        sensor = getSensor(sensor, user, password)
-        return True if sensor else False
-    except Exception as e:
-        log.debug("Probably not found. Attempting to register new sensor")
-        
+
+    sensorExists = getSensor(sensor["name"], user, password)
+    if sensorExists: return True        
     
         #only register non-existing ones
     jsonSensor = json.dumps(sensor)

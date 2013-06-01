@@ -7,21 +7,34 @@ import logging
 log = logging.getLogger(__name__)
 
 DATA_GET_URI = "http://hatrafficinfo.dft.gov.uk/feeds/datex/England/JourneyTimeData/content.xml"
-SENSOR_NAME = "highway-traffic"
+SENSOR_NAME = "journey-time"
 
 location_info = None
 
+location_map = {}
+
 def initLocationInfo():
+    print "init location info.."
     r = requests.get("http://hatrafficinfo.dft.gov.uk/feeds/datex/England/PredefinedLocationJourneyTimeSections/content.xml")
-    global location_info
+    
     location_info = BeautifulSoup(r.text, "xml")
+    sensors = location_info.findAll("predefinedLocation", attrs={"id": True})
+    global location_map
+    for sensor in sensors:
+        # linear segments
+        from_location = sensor.find("from")
+        to_location = sensor.find("to")
+        
+        # from lat/long, to lat/lng
+        try:
+            location_map[sensor["id"]] = ((from_location.pointCoordinates.latitude.string, from_location.pointCoordinates.longitude.string), 
+                                          (to_location.pointCoordinates.latitude.string, to_location.pointCoordinates.longitude.string))
+        except Exception as e:
+            print "to/from fields?"
+    print "done init location info.."
     
 def findLocationInfo(id):
-    sensor = location_info.findAll("predefinedLocation", id=id)
-    # Just get first lat lng for now?
-    lat = sensor[0].findAll("latitude")[0].string
-    lng = sensor[0].findAll("longitude")[0].string
-    return (lat, lng)
+    return location_map[id]
 
 def getSensorSchema():
     schema = [
@@ -33,7 +46,10 @@ def getSensorSchema():
               {"name":"locationref","type":"STRING","required":False,"longName":"DATEX2 Traffic Location Reference"},
               {"name":"sourceid","type":"NUMBER","required":False,"longName":"DATEX2 Traffic Link ID"},
               {"name":"recordedtime","type":"STRING","required":False,"longName":"Timestamp of traffic record"},
-              
+              {"name":"latfrom","type":"NUMBER","required":False,"longName":"latitude from"},
+              {"name":"lngfrom","type":"NUMBER","required":False,"longName":"longitude from"},
+              {"name":"latto","type":"NUMBER","required":False,"longName":"latitude to"},
+              {"name":"lngto","type":"NUMBER","required":False,"longName":"longitude to"}
               ]
     return schema
 
@@ -68,6 +84,7 @@ def updateWotkit():
     r = requests.get(DATA_GET_URI)
     text = r.text
     parsedXML = BeautifulSoup(text, "xml")
+    combined_data = []
     for data in parsedXML.findAll("elaboratedData"):
         wotkit_data = {}
         try:
@@ -77,11 +94,17 @@ def updateWotkit():
             wotkit_data["value"] = data.basicDataValue.travelTime.string
             wotkit_data["idealtime"] = data.basicDataValue.freeFlowTravelTime.string
             wotkit_data["historictime"] = data.basicDataValue.normallyExpectedTravelTime.string
+            (wotkit_data["latfrom"], wotkit_data["lngfrom"]),(wotkit_data["latto"], wotkit_data["lngto"]) = findLocationInfo(wotkit_data["locationref"])
+            # For now lng lat same as from
+            wotkit_data["lat"], wotkit_data["lng"] = wotkit_data["latfrom"], wotkit_data["lngfrom"]
+            wotkit_data["timestamp"] = sensetecnic.getWotkitTimeStamp()
+            
+            combined_data.append(wotkit_data)
         except Exception as e:
-            log.debug("Failed to parse traffic info" + str(e))
-        try:
-            sensetecnic.sendData(SENSOR_NAME, None, None, wotkit_data)
-        except Exception as e:
-            log.debug("Failed to update wotkit sensor data")
+            log.debug("Failed to parse traffic info: " + str(e))
+    try:
+        sensetecnic.sendBulkData(SENSOR_NAME, None, None, combined_data)
+    except Exception as e:
+        log.debug("Failed to update wotkit sensor data")
         
     return [SENSOR_NAME]
