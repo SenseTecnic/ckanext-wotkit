@@ -24,18 +24,58 @@ log = getLogger(__name__)
 _wotkit_url = ""
 _api_url = ""
 _processor_url = ""
+_admin_id = ""
+_admin_key = ""
 
+def getWotkitAccount(username):
+    url = _api_url + "/users/" + username
+    response = requests.get(url, auth = (_admin_id, _admin_key))
+    
+    if response.status_code == 404:
+        log.info("Wotkit account username %s not found." % username)
+        return None
+    else:
+        return json.loads(response.text)
 
-def initWotkitUrls(wotkit_url, api_url, processor_url):
+def createWotkitAccount(data):
+    url = _api_url + "/users"
+    response = getBasicAuthenticationResponse(url, _admin_id, _admin_key, "POST", data)
+    if response.ok:
+        log.info("Created wotkit account: " + str(data))
+        return True
+    else:
+        log.warning("Failed to create wotkit account: " + str(data) + ", code: " + str(response.status_code))
+        log.warning(response.text)
+        return False
+
+def updateWotkitAccount(username, data):
+    url = _api_url + "/users/" + username
+    response = getBasicAuthenticationResponse(url, _admin_id, _admin_key, "PUT", data)
+    if response.ok:
+        log.info("Updated wotkit account: " + str(data))
+        return True
+    else:
+        log.warning("Failed to create wotkit account: " + str(data) + ", code: " + str(response.status_code))
+        log.warning(response.text)
+        return False
+    
+def deleteWotkitAccount(user):
+    pass
+
+def initWotkitUrls(wotkit_url, api_url, processor_url, admin_id, admin_key):
     global _wotkit_url 
     global _api_url
     global _processor_url
+    global _admin_id
+    global _admin_key
     
     if not wotkit_url:
         raise Exception("No wotkit_url found in *.ini config file!")
     _wotkit_url = wotkit_url
     _api_url = api_url
     _processor_url = processor_url
+    _admin_id = admin_id
+    _admin_key = admin_key
 
 def getBasicAuthenticationResponse(url, user, pwd, http_method = "GET", data = None):
     """Connect to wotkit api with basic authentication given by user, pwd"""
@@ -46,6 +86,7 @@ def getBasicAuthenticationResponse(url, user, pwd, http_method = "GET", data = N
     
     json_data = json.dumps(data)
     
+    request = None
     if http_method == "GET":
         request = requests.get(url, auth=(user, pwd), data=json_data, headers=content_type)
     elif http_method == "POST":
@@ -56,8 +97,8 @@ def getBasicAuthenticationResponse(url, user, pwd, http_method = "GET", data = N
         request = requests.delete(url, auth=(user, pwd), data=json_data, headers=content_type)
     else:
         raise ValueError("Invalid HTTP request")
-    data = json.loads(request.text)
-    return data
+    
+    return request
 
 
 
@@ -69,7 +110,8 @@ def proxyParameters(wotkit_user, wotkit_password, api_path, http_method, data):
     url = _api_url + "/" + api_path
         
     try:
-        data = getBasicAuthenticationResponse(url, wotkit_user, wotkit_password, http_method, data)
+        response = getBasicAuthenticationResponse(url, wotkit_user, wotkit_password, http_method, data)
+        data = json.loads(response.text)
     except Exception as e:
         msg = "Failed to open wotkit url. Message: " + e.message
         data = {"Error": msg}
@@ -83,7 +125,8 @@ def getSensor(wotkit_user, wotkit_password, sensor_name):
     log.debug("Wotkit URL: " + url + ", User: " + wotkit_user + ", Pass: " + wotkit_password)
     
     try:
-        data = getBasicAuthenticationResponse(url, wotkit_user, wotkit_password)
+        response = getBasicAuthenticationResponse(url, wotkit_user, wotkit_password)
+        data = json.loads(response.text)
     except Exception as e:
         msg = "Failed to open Wotkit url. Message: " + e.message
         data = {"Error": msg}

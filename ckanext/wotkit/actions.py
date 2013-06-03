@@ -63,55 +63,92 @@ def user_show(context, data_dict):
     """Override default user_show action to also include wotkit credentials"""
     # Call default user_show, which handles authorization
     user_dict = logic.action.get.user_show(context, data_dict)
-    wotkit_dict = _get_action("user_wotkit_credentials")(context, data_dict)
-    user_dict["wotkit_id"] = wotkit_dict.get("wotkit_id", None)
-    user_dict["wotkit_password"] = wotkit_dict.get("wotkit_password", None)
+    #wotkit_dict = _get_action("user_wotkit_credentials")(context, data_dict)
+    #user_dict["wotkit_id"] = wotkit_dict.get("wotkit_id", None)
+    #user_dict["wotkit_password"] = wotkit_dict.get("wotkit_password", None)
     return user_dict
 
 def user_create(context, data_dict):
     """Override default user_create action to also include wotkit credentials"""
     
-    # Call parent method, this should handle authorization and rollback on error
+    # Temporarily defer commits so we can reuse code and rollback if wotkit problems
+    prev_defer_commit = context.get("defer_commit")
+    context["defer_commit"] = True
+    
+    # Call parent method, this should handle authorization and rollback on error    
     user_dict = logic.action.create.user_create(context, data_dict)
-
+    session = context['session']
     user_model = context["user_obj"]
     
-    wotkit_create_dict = {"ckan_id": user_model.id, 
-                          "wotkit_id": data_dict["wotkit_id"], 
-                          "wotkit_password": data_dict["wotkit_password"]}
-    ckan.lib.dictization.table_dict_save(wotkit_create_dict, WotkitUser, context)
     
-    if not context.get('defer_commit'):
+    if wotkit_proxy.getWotkitAccount(user_model.name):
+        session.rollback()
+        raise logic.ValidationError("User already exists in wotkit")
+    
+    data = {"username": user_model.name,
+            "password": user_model.password1,
+            "email": user_model.email,
+            "firstname": user_model.name,
+            "lastname": user_model.fullname}
+    
+    if wotkit_proxy.createWotkitAccount(data):
+        log.debug("Success creating wotkit account")
+    else:
+        log.debug("Failed creating wotkit account")
+        session.rollback()
+        raise logic.ValidationError("Failed user creation in wotkit")
+    
+
+    #wotkit_create_dict = {"ckan_id": user_model.id, 
+    #                      "wotkit_id": data_dict["wotkit_id"], 
+    #                      "wotkit_password": data_dict["wotkit_password"]}
+    #ckan.lib.dictization.table_dict_save(wotkit_create_dict, WotkitUser, context)
+    
+    if not prev_defer_commit:
         model.repo.commit()
 
-    return user_dict.update(wotkit_create_dict);
+    return user_dict
     
     
 def user_update(context, data_dict):
     """Override default user_update action to also include wotkit credentials"""
     #Get current user ID
     user_model = model.User.get(context["user"])
-
+    session = context['session']
+    
     if user_model is None:
         raise NotFound('User was not found.')
     
-        
-    # Populate database row to update
-    wotkit_update_dict = {"ckan_id": user_model.id, 
-                          "wotkit_id": data_dict["wotkit_id"], 
-                          "wotkit_password": data_dict["wotkit_password"]}    
+    if not wotkit_proxy.getWotkitAccount(user_model.name):
+        raise NotFound('User was not found in the Wotkit')
     
-    # Check if this is an update or a new row in wotkit_user table
-    wotkit_credentials = _get_action("user_wotkit_credentials")(context, data_dict)
-    if "id" in wotkit_credentials:
-        wotkit_update_dict["id"] = wotkit_credentials["id"]
-        
-    # Update
-    ckan.lib.dictization.table_dict_save(wotkit_update_dict, WotkitUser, context) 
+    if user_model.name != data_dict["name"]:
+        raise logic.ValidationError("username is unchangeable since ckan account is linked with wotkit account by name")
+    
+    
+    # Temporarily defer commits so we can reuse code and rollback if wotkit problems
+    prev_defer_commit = context.get("defer_commit")
+    context["defer_commit"] = True
     
     # For now, authorization and validity is checked in the parent function. 
     # This should be ok since the above database update will rollback if there is an error
-    updated_user = logic.action.update.user_update(context, data_dict)
+    try:
+        updated_user = logic.action.update.user_update(context, data_dict)
+        wotkit_update_data = {"email": updated_user["email"],
+                              "firstname": updated_user["name"],
+                              "lastname": updated_user["fullname"]}
+        if data_dict["password1"]:
+            wotkit_update_data["password"] = data_dict["password1"]
+            
+        wotkit_proxy.updateWotkitAccount(user_model.name, wotkit_update_data)
+    except Exception as e:
+        session.rollback()
+        raise e
+    
+    if not prev_defer_commit:
+        model.repo.commit()
+        
+    
     return updated_user
     
 @logic.side_effect_free

@@ -34,8 +34,8 @@ class WotkitPlugin(SingletonPlugin):
     def update_config(self, config):
         """Add template directory of this extension to override the default ckan templates"""
         #Probably have to add directories for css / jscript files later
-        toolkit.add_template_directory(config, "theme/templates")
-        
+        #toolkit.add_template_directory(config, "theme/templates")
+        pass
 
     def configure(self, config):
         """Implements IConfigurable plugin that initializes db tables.
@@ -49,15 +49,15 @@ class WotkitPlugin(SingletonPlugin):
         if not config.get("wotkit.processor_url"):
             raise Exception("No wotkit.processor_url in configuration .ini file")
         
-        if not config.get("wotkit.harvest_id"):
+        if not config.get("wotkit.admin_id"):
             raise Exception("No wotkit.harvest_id in configuration .ini file")
-        if not config.get("wotkit.harvest_key"):
+        if not config.get("wotkit.admin_key"):
             raise Exception("No wotkit.harvest_key in configuration .ini file")
 
         import sensors.sensetecnic as sensetecnic
         # Somewhat redundant for now.. initializing in both places
-        sensetecnic.init(config.get("wotkit.wotkit_url"), config.get("wotkit.api_url"), config.get("wotkit.processor_url"), config.get("wotkit.harvest_id"), config.get("wotkit.harvest_key"))                
-        ckanext.wotkit.wotkit_proxy.initWotkitUrls(config.get("wotkit.wotkit_url"), config.get("wotkit.api_url"), config.get("wotkit.processor_url"))
+        sensetecnic.init(config.get("wotkit.wotkit_url"), config.get("wotkit.api_url"), config.get("wotkit.processor_url"), config.get("wotkit.admin_id"), config.get("wotkit.admin_key"))                
+        ckanext.wotkit.wotkit_proxy.initWotkitUrls(config.get("wotkit.wotkit_url"), config.get("wotkit.api_url"), config.get("wotkit.processor_url"), config.get("wotkit.admin_id"), config.get("wotkit.admin_key"))
         
         from model import WotkitUser
         log.debug("Initializing wotkit db")
@@ -66,8 +66,7 @@ class WotkitPlugin(SingletonPlugin):
     def get_actions(self):
         """Configure ckan action string -> function mapping for this extension"""
         #log.debug("Initializing Wotkit Plugin Actions")
-        return {"user_show": ckanext.wotkit.actions.user_show,
-                "user_update": ckanext.wotkit.actions.user_update,
+        return {"user_update": ckanext.wotkit.actions.user_update,
                 "user_create": ckanext.wotkit.actions.user_create,
                 "wotkit": ckanext.wotkit.actions.wotkit,
                 "wotkit_harvest_module": ckanext.wotkit.actions.wotkit_harvest_module,
@@ -88,17 +87,17 @@ class WotkitPlugin(SingletonPlugin):
         # Hook in our custom user controller at the points of creation
         # and edition.
 
-        map.connect('/user/register',
-                    controller="ckanext.wotkit.controller:WotkitUserController",
-                    action='register')
+        #map.connect('/user/register',
+        #            controller="ckanext.wotkit.controller:WotkitUserController",
+        #            action='register')
         
-        map.connect('/user/edit',
-                    controller='ckanext.wotkit.controller:WotkitUserController',
-                    action='edit')
+        #map.connect('/user/edit',
+        #            controller='ckanext.wotkit.controller:WotkitUserController',
+        #            action='edit')
                 
-        map.connect('/user/edit/{id:.*}',
-                    controller='ckanext.wotkit.controller:WotkitUserController',
-                    action='edit')
+        #map.connect('/user/edit/{id:.*}',
+        #            controller='ckanext.wotkit.controller:WotkitUserController',
+        #            action='edit')
                 
         #map.connect('/package/new', controller='package_formalchemy', action='new')
         #map.connect('/package/edit/{id}', controller='package_formalchemy', action='edit')
