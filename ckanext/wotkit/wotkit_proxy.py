@@ -57,7 +57,7 @@ def updateWotkitAccount(username, data):
     else:
         log.warning("Failed to create wotkit account: " + str(data) + ", code: " + str(response.status_code))
         log.warning(response.text)
-        return False
+        raise logic.ValidationError(response.text)
     
 def deleteWotkitAccount(user):
     pass
