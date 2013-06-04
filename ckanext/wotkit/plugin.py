@@ -87,6 +87,11 @@ class WotkitPlugin(SingletonPlugin):
         # Hook in our custom user controller at the points of creation
         # and edition.
 
+        map.connect('/user/logged_in',
+                    controller="ckanext.wotkit.controller:WotkitUserController",
+                    action='logged_in')
+        
+
         #map.connect('/user/register',
         #            controller="ckanext.wotkit.controller:WotkitUserController",
         #            action='register')
