@@ -83,7 +83,7 @@ def user_create(context, data_dict):
     
     if wotkit_proxy.getWotkitAccount(user_model.name):
         session.rollback()
-        raise logic.ValidationError("User already exists in wotkit")
+        raise logic.ValidationError({"User already exists in wotkit": " "})
     
     data = {"username": user_model.name,
             "password": user_model.password1,
@@ -96,7 +96,7 @@ def user_create(context, data_dict):
     else:
         log.debug("Failed creating wotkit account")
         session.rollback()
-        raise logic.ValidationError("Failed user creation in wotkit")
+        raise logic.ValidationError({"Failed user creation in wotkit": " "})
     
 
     #wotkit_create_dict = {"ckan_id": user_model.id, 
@@ -107,24 +107,27 @@ def user_create(context, data_dict):
     if not prev_defer_commit:
         model.repo.commit()
 
+    context["defer_commit"] = prev_defer_commit
     return user_dict
     
     
 def user_update(context, data_dict):
     """Override default user_update action to also include wotkit credentials"""
+
     #Get current user ID
-    user_model = model.User.get(context["user"])
+    id = _get_or_bust(data_dict, 'id')
+
+    user_model = model.User.get(id)
     session = context['session']
-    
+
     if user_model is None:
-        raise logic.NotFound('User was not found.')
+        raise logic.ValidationError({'User was not found in ckan model.': " "})
     
     if not wotkit_proxy.getWotkitAccount(user_model.name):
-        raise logic.NotFound('User was not found in the Wotkit')
+        raise logic.ValidationError({'User was not found in the Wotkit, make sure username %s exists in Wotkit' % user_model.name: " "})
     
     if user_model.name != data_dict["name"]:
-        raise logic.ValidationError("username is unchangeable since ckan account is linked with wotkit account by name")
-    
+        raise logic.ValidationError({"username is unchangeable since ckan account is linked with wotkit account by name": " "})
     
     # Temporarily defer commits so we can reuse code and rollback if wotkit problems
     prev_defer_commit = context.get("defer_commit")
@@ -139,7 +142,8 @@ def user_update(context, data_dict):
                               "lastname": updated_user["fullname"]}
         if data_dict["password1"]:
             wotkit_update_data["password"] = data_dict["password1"]
-            
+    
+    
         wotkit_proxy.updateWotkitAccount(user_model.name, wotkit_update_data)
     except Exception as e:
         session.rollback()
@@ -148,7 +152,7 @@ def user_update(context, data_dict):
     if not prev_defer_commit:
         model.repo.commit()
         
-    
+    context["defer_commit"] = prev_defer_commit
     return updated_user
     
 @logic.side_effect_free
