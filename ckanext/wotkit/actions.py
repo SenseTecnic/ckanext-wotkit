@@ -117,10 +117,10 @@ def user_update(context, data_dict):
     session = context['session']
     
     if user_model is None:
-        raise NotFound('User was not found.')
+        raise logic.NotFound('User was not found.')
     
     if not wotkit_proxy.getWotkitAccount(user_model.name):
-        raise NotFound('User was not found in the Wotkit')
+        raise logic.NotFound('User was not found in the Wotkit')
     
     if user_model.name != data_dict["name"]:
         raise logic.ValidationError("username is unchangeable since ckan account is linked with wotkit account by name")
