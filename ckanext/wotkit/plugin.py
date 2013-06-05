@@ -20,6 +20,9 @@ log = getLogger(__name__)
 
 import pprint
 
+
+from routes.mapper import SubMapper
+
 class WotkitPlugin(SingletonPlugin):
     """This plugin contains functions to access Wotkit
     """
@@ -91,6 +94,11 @@ class WotkitPlugin(SingletonPlugin):
                     controller="ckanext.wotkit.controller:WotkitUserController",
                     action='logged_in')
         
+        GET = dict(method=['GET'])
+        with SubMapper(map, controller='ckanext.wotkit.controller:HackedStorageAPIController') as m:
+            m.connect('storage_api_get_metadata', '/api/storage/metadata/{label:.*}',
+                      action='get_metadata', conditions=GET)
+
 
         #map.connect('/user/register',
         #            controller="ckanext.wotkit.controller:WotkitUserController",

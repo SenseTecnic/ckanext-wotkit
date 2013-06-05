@@ -32,6 +32,20 @@ DataError = dictization_functions.DataError
 unflatten = dictization_functions.unflatten
 
 from ckan.controllers.user import UserController
+from ckan.controllers.storage import StorageAPIController
+
+from ckan.lib.jsonp import jsonpify
+import json
+
+class HackedStorageAPIController(StorageAPIController):
+    """ Dirty hack to deal with the /data URL we use. Ckan has issues with route handling when it doesn't run as route path / """
+    
+    def get_metadata(self, label):
+        metadata_jsonp = super(HackedStorageAPIController, self).get_metadata(label)
+        metadata = json.loads(metadata_jsonp)
+        metadata["_location"] = metadata["_location"].replace("/data/data", "/data")
+        return json.dumps(metadata, sort_keys=True)
+
 
 class WotkitUserController(UserController):
     """Override default user controller to add Wotkit credentials
