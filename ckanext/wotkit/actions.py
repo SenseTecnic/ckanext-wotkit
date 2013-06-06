@@ -80,7 +80,7 @@ def user_create(context, data_dict):
     session = context['session']
     user_model = context["user_obj"]
     
-    
+    """
     if wotkit_proxy.getWotkitAccount(user_model.name):
         session.rollback()
         raise logic.ValidationError({"User already exists in wotkit": " "})
@@ -97,7 +97,7 @@ def user_create(context, data_dict):
         log.debug("Failed creating wotkit account")
         session.rollback()
         raise logic.ValidationError({"Failed user creation in wotkit": " "})
-    
+    """
 
     #wotkit_create_dict = {"ckan_id": user_model.id, 
     #                      "wotkit_id": data_dict["wotkit_id"], 
@@ -123,8 +123,10 @@ def user_update(context, data_dict):
     if user_model is None:
         raise logic.ValidationError({'User was not found in ckan model.': " "})
     
+    """
     if not wotkit_proxy.getWotkitAccount(user_model.name):
         raise logic.ValidationError({'User was not found in the Wotkit, make sure username %s exists in Wotkit' % user_model.name: " "})
+    """
     
     if user_model.name != data_dict["name"]:
         raise logic.ValidationError({"username is unchangeable since ckan account is linked with wotkit account by name": " "})
@@ -137,6 +139,8 @@ def user_update(context, data_dict):
     # This should be ok since the above database update will rollback if there is an error
     try:
         updated_user = logic.action.update.user_update(context, data_dict)
+        
+        """
         wotkit_update_data = {"email": updated_user["email"],
                               "firstname": updated_user["name"],
                               "lastname": updated_user["fullname"]}
@@ -145,6 +149,7 @@ def user_update(context, data_dict):
     
     
         wotkit_proxy.updateWotkitAccount(user_model.name, wotkit_update_data)
+        """
     except Exception as e:
         session.rollback()
         raise e
