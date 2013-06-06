@@ -242,8 +242,8 @@ def wotkit_harvest_module(context, data_dict):
 
     # Somewhat redundant step that attempts to fetch all sensor data from wotkit that was just pushed
     import sensors.sensetecnic as sensetecnic
-    wotkit_url = sensetecnic.getWotkitApiUrl()
-    
+    wotkit_api_url = sensetecnic.getWotkitApiUrl()
+    wotkit_url = sensetecnic.getWotkitUrl()
     for sensorName in updated_sensors:
         # Use default wotkit credentials supplied by .ini config that is loaded into sensetecnic module
         try:
@@ -254,11 +254,16 @@ def wotkit_harvest_module(context, data_dict):
     
         # for now we hardcode harvester user
         wotkit_user = sensetecnic.STS_ID
-        package_dict['resources'].append({'url': wotkit_url + "/sensors/" + wotkit_user + "." + sensorName,
+        package_dict['resources'].append({'url': wotkit_api_url + "/sensors/" + wotkit_user + "." + sensorName,
                                           'name': sensorName,
                                           'format': 'application/json',
-                                          'description': sensor_dict["description"],
+                                          'description': "Link to Wotkit API. " + sensor_dict["description"],
                                           '__extras': sensor_dict})
+        package_dict['resources'].append({'url': wotkit_url + "/sensors/" + wotkit_user + "." + sensorName,
+                                          'name': sensorName,
+                                          'format': 'text/html',
+                                          'description': 'Link to Wotkit UI. '                                                                                 
+                                          })
     
     return package_dict
 
