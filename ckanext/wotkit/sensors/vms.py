@@ -68,7 +68,7 @@ def checkSensorExist():
 def updateWotkit():
     checkSensorExist()
     
-    initLocationInfo()
+    #initLocationInfo()
     
     r = requests.get(DATA_GET_URI)
     text = r.text
@@ -86,7 +86,7 @@ def updateWotkit():
             wotkit_data["updatedtime"] = data.situationRecordVersionTime.string
             wotkit_data["locationref"] = data.groupOfLocations.locationContainedInGroup.predefinedLocationReference.string
             wotkit_data["vmsid"] = data.vmsIdentifier.string
-            wotkit_data["message"] = " ".join(data.vmsLegend)
+            wotkit_data["message"] = "".join([message.string for message in data.findAll("vmsLegend")])
             wotkit_data["probability"] = data.probabilityOfOccurrence.string
             wotkit_data["reason"] = data.reasonForSetting.value.string
             
@@ -94,6 +94,7 @@ def updateWotkit():
             wotkit_data["timestamp"] = sensetecnic.getWotkitTimeStamp()
             combined_data.append(wotkit_data)
         except Exception as e:
+            print str(e)
             log.debug("Failed to parse traffic info" + str(e))
     try:
         sensetecnic.sendBulkData(SENSOR_NAME, None, None, combined_data)

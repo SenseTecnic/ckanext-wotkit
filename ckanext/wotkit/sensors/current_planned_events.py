@@ -75,7 +75,7 @@ def updateWotkit():
                 wotkit_data["lng"] = location.point.pointCoordinates.longitude.string
                 
             wotkit_data["value"] = data.impact.impactDetails.numberOfOperationalLanes.string
-            wotkit_data["updatedtime"] = data.situationRecordVersionTime.string
+            wotkit_data["recordedtime"] = data.situationRecordVersionTime.string
             wotkit_data["restrictedlanes"] = data.impact.impactDetails.numberOfLanesRestricted.string
             wotkit_data["endtime"] = data.validity.validityTimeSpecification.overallEndTime.string
             wotkit_data["starttime"] = data.validity.validityTimeSpecification.overallStartTime.string
