@@ -68,7 +68,7 @@ def checkSensorExist():
 def updateWotkit():
     checkSensorExist()
     
-    #initLocationInfo()
+    initLocationInfo()
     
     r = requests.get(DATA_GET_URI)
     text = r.text
