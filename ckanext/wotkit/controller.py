@@ -10,6 +10,7 @@ import ckan.lib.helpers as h
 import ckan.new_authz as new_authz
 import ckan.logic as logic
 import ckan.logic.schema as schema
+from ckan.logic.schema import ignore_missing
 import ckan.lib.captcha as captcha
 import ckan.lib.mailer as mailer
 import ckan.lib.navl.dictization_functions as dictization_functions
@@ -37,6 +38,8 @@ from ckan.controllers.storage import StorageAPIController
 from ckan.lib.jsonp import jsonpify
 import json
 
+from pytz import common_timezones
+
 class HackedStorageAPIController(StorageAPIController):
     """ Dirty hack to deal with the /data URL we use. Ckan has issues with route handling when it doesn't run as route path / """
     
@@ -56,7 +59,7 @@ class WotkitUserController(UserController):
         lang = session.pop('lang', None)
         session.save()
         came_from = request.params.get('came_from', '')
-        log.warning("came from: " + str(came_from))
+        #log.warning("came from: " + str(came_from))
         # we need to set the language explicitly here or the flash
         # messages will not be translated.
         i18n.set_lang(lang)
@@ -86,10 +89,42 @@ class WotkitUserController(UserController):
             else:
                 return self.login(error=err)
 
-    def _add_wotkit_credentials_to_schema(self, schema):
-        schema['wotkit_id'] = [ignore_missing, unicode]
-        schema['wotkit_password'] = [ignore_missing, unicode]
+    def logout(self):
+        """
+        When user logs out, it executes this first. Modifies original logout to track parameter came_from.
+        If came_from is specified, it logs out to the normal ckan logout URL.
+        If came_from is ignored, it makes sure to logout from wotkit side by logging out of ckan then redirecting to wotkit
+        """
+        # save our language in the session so we don't lose it
+        session['lang'] = request.environ.get('CKAN_LANG')
         
+        came_from = request.params.get('came_from', '')
+        session['logout_came_from'] = came_from
+        session.save()
+        
+        log.warning("came from: " + str(came_from))
+        h.redirect_to(self._get_repoze_handler('logout_handler_path'), came_from=came_from)
+
+    def logged_out(self):
+        """
+        Accounts came_from. If specified, logs out of ckan only. If not specified, logs out of both ckan and wotkit.
+        """
+        # we need to get our language info back and the show the correct page
+        lang = session.get('lang')
+        came_from = session.get('logout_came_from')
+        log.warning("came from: " + str(came_from))
+        c.user = None
+        session.delete()
+        if came_from:
+            h.redirect_to(locale=lang, controller='user', action='logged_out_page')
+        else:
+            import routes
+            # redirect user to logout url
+            url = request.environ['repoze.who.plugins']['friendlyform'].post_logout_url
+            routes.redirect_to(url)
+    
+    def _add_wotkit_credentials_to_schema(self, schema):
+        schema['timezone'] = [ignore_missing, unicode]
 
     def _new_form_to_db_schema(self):
         """
@@ -106,3 +141,88 @@ class WotkitUserController(UserController):
         schema = super(WotkitUserController, self)._edit_form_to_db_schema()
         self._add_wotkit_credentials_to_schema(schema)
         return schema
+
+    def edit(self, id=None, data=None, errors=None, error_summary=None):
+        context = {'save': 'save' in request.params,
+                   'schema': self._edit_form_to_db_schema(),
+                   }
+        if id is None:
+            if c.userobj:
+                id = c.userobj.id
+            else:
+                abort(400, _('No user specified'))
+        data_dict = {'id': id}
+
+        if (context['save']) and not data:
+            return self._save_edit(id, context)
+
+        try:
+            old_data = get_action('user_show')(context, data_dict)
+
+            schema = self._db_to_edit_form_schema()
+            if schema:
+                old_data, errors = validate(old_data, schema)
+
+            c.display_name = old_data.get('display_name')
+            c.user_name = old_data.get('name')
+
+            data = data or old_data
+
+        except NotAuthorized:
+            abort(401, _('Unauthorized to edit user %s') % '')
+        except NotFound:
+            abort(404, _('User not found'))
+
+        user_obj = context.get('user_obj')
+
+        if not (new_authz.is_sysadmin(c.user)
+                or c.user == user_obj.name):
+            abort(401, _('User %s not authorized to edit %s') %
+                  (str(c.user), id))
+
+        errors = errors or {}
+        data["timezones"] = common_timezones
+        vars = {'data': data, 'errors': errors, 'error_summary': error_summary}
+        self._setup_template_variables({'model': model,
+                                        'session': model.Session,
+                                        'user': c.user or c.author},
+                                       data_dict)
+
+        c.is_myself = True
+        c.show_email_notifications = h.asbool(
+            config.get('ckan.activity_streams_email_notifications'))
+        c.form = render(self.edit_user_form, extra_vars=vars)
+
+        return render('user/edit.html')
+
+    def new(self, data=None, errors=None, error_summary=None):
+        '''GET to display a form for registering a new user.
+           or POST the form data to actually do the user registration.
+        '''
+        context = {'model': model, 'session': model.Session,
+                   'user': c.user or c.author,
+                   'schema': self._new_form_to_db_schema(),
+                   'save': 'save' in request.params}
+
+        try:
+            check_access('user_create', context)
+        except NotAuthorized:
+            abort(401, _('Unauthorized to create a user'))
+
+        if context['save'] and not data:
+            return self._save_new(context)
+
+        if c.user and not data:
+            # #1799 Don't offer the registration form if already logged in
+            return render('user/logout_first.html')
+
+        data = data or {}
+        errors = errors or {}
+        error_summary = error_summary or {}
+        data["timezones"] = common_timezones
+        vars = {'data': data, 'errors': errors, 'error_summary': error_summary}
+
+        c.is_sysadmin = new_authz.is_sysadmin(c.user)
+        c.form = render(self.new_user_form, extra_vars=vars)
+        return render('user/new.html')
+

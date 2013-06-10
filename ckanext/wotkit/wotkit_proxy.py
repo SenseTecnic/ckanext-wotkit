@@ -31,7 +31,7 @@ def getWotkitAccount(username):
     url = _api_url + "/users/" + username
     response = requests.get(url, auth = (_admin_id, _admin_key))
     
-    if response.status_code == 404:
+    if response.status_code == 401 or response.status_code == 404:
         log.info("Wotkit account username %s not found." % username)
         return None
     else:

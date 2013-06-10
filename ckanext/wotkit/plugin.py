@@ -37,7 +37,7 @@ class WotkitPlugin(SingletonPlugin):
     def update_config(self, config):
         """Add template directory of this extension to override the default ckan templates"""
         #Probably have to add directories for css / jscript files later
-        #toolkit.add_template_directory(config, "theme/templates")
+        toolkit.add_template_directory(config, "theme/templates")
         pass
 
     def configure(self, config):
@@ -94,24 +94,31 @@ class WotkitPlugin(SingletonPlugin):
                     controller="ckanext.wotkit.controller:WotkitUserController",
                     action='logged_in')
         
+        map.connect('/user/_logout', 
+                    controller="ckanext.wotkit.controller:WotkitUserController", 
+                    action='logout')
+        map.connect('/user/logged_out', 
+                    controller="ckanext.wotkit.controller:WotkitUserController", 
+                    action='logged_out')
+        
         GET = dict(method=['GET'])
         with SubMapper(map, controller='ckanext.wotkit.controller:HackedStorageAPIController') as m:
             m.connect('storage_api_get_metadata', '/api/storage/metadata/{label:.*}',
                       action='get_metadata', conditions=GET)
 
-
-        #map.connect('/user/register',
-        #            controller="ckanext.wotkit.controller:WotkitUserController",
-        #            action='register')
         
-        #map.connect('/user/edit',
-        #            controller='ckanext.wotkit.controller:WotkitUserController',
-        #            action='edit')
+        map.connect('/user/register',
+                    controller="ckanext.wotkit.controller:WotkitUserController",
+                    action='register')
+        
+        map.connect('/user/edit',
+                    controller='ckanext.wotkit.controller:WotkitUserController',
+                    action='edit')
                 
-        #map.connect('/user/edit/{id:.*}',
-        #            controller='ckanext.wotkit.controller:WotkitUserController',
-        #            action='edit')
-                
+        map.connect('/user/edit/{id:.*}',
+                    controller='ckanext.wotkit.controller:WotkitUserController',
+                    action='edit')
+           
         #map.connect('/package/new', controller='package_formalchemy', action='new')
         #map.connect('/package/edit/{id}', controller='package_formalchemy', action='edit')
         return map

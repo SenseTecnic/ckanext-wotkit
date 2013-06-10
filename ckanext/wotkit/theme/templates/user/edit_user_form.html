@@ -20,9 +20,15 @@
       {% endcall %}
     {% endif %}
 
-    {{ form.input('wotkit_id', label=_('Wotkit ID'), id='field-wotkit-id', value=data.wotkit_id, error=errors.wotkit_id, classes=['control-medium']) }}
-    {{ form.input('wotkit_password', label=_('Wotkit Password'), id='field-wotkit-password', value=data.wotkit_password, error=errors.wotkit_password, classes=['control-medium']) }}
-	
+	<select classes=["control-medium"] name="timezone" id="field-timezone">
+		{% for timezone in data.timezones %}
+			{% if timezone == data.timezone %}
+				<option selected value="{{ timezone }}">{{ timezone }}</option>	
+		    {% else %}
+		    	<option value="{{ timezone }}">{{ timezone }}</option>
+		    {% endif %}
+		{% endfor %}
+	</select>
   </fieldset>
 
   <fieldset>
