@@ -39,6 +39,7 @@ from ckan.lib.jsonp import jsonpify
 import json
 
 from pytz import common_timezones
+import wotkit_proxy
 
 class HackedStorageAPIController(StorageAPIController):
     """ Dirty hack to deal with the /data URL we use. Ckan has issues with route handling when it doesn't run as route path / """
@@ -65,6 +66,11 @@ class WotkitUserController(UserController):
         i18n.set_lang(lang)
 
         if c.user:
+            if not wotkit_proxy.getWotkitAccount(c.user):
+                c.user = None
+                session.delete()
+                return self.login(error="Failed Wotkit Login. Please contact the system administrator. (ckan and wotkit login must be the synchronized)")
+            
             context = None
             data_dict = {'id': c.user}
 
