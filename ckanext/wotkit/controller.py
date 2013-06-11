@@ -15,7 +15,7 @@ import ckan.lib.captcha as captcha
 import ckan.lib.mailer as mailer
 import ckan.lib.navl.dictization_functions as dictization_functions
 
-from ckan.common import _, session, c, g, request
+from ckan.common import _, session, c, g, request, response
 
 log = logging.getLogger(__name__)
 
@@ -40,6 +40,7 @@ import json
 
 from pytz import common_timezones
 import wotkit_proxy
+from repoze.who.plugins.auth_tkt import AuthTktCookiePlugin
 
 class HackedStorageAPIController(StorageAPIController):
     """ Dirty hack to deal with the /data URL we use. Ckan has issues with route handling when it doesn't run as route path / """
@@ -69,6 +70,8 @@ class WotkitUserController(UserController):
             if not wotkit_proxy.getWotkitAccount(c.user):
                 c.user = None
                 session.delete()
+                response.delete_cookie("auth_tkt")
+
                 return self.login(error="Failed Wotkit Login. Please contact the system administrator. (ckan and wotkit login must be the synchronized)")
             
             context = None
