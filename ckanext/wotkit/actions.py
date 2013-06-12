@@ -149,8 +149,7 @@ def user_update(context, data_dict):
         updated_user = logic.action.update.user_update(context, data_dict)
         
         
-        wotkit_update_data = {"id": wotkit_account["id"],
-                              "email": updated_user["email"],
+        wotkit_update_data = {"email": updated_user["email"],
                               "firstname": updated_user["name"],
                               "lastname": updated_user["fullname"]}
         
@@ -161,7 +160,7 @@ def user_update(context, data_dict):
             wotkit_update_data["password"] = data_dict["password1"]
     
     
-        wotkit_proxy.updateWotkitAccount(user_model.name, wotkit_update_data)
+        wotkit_proxy.updateWotkitAccount(str(wotkit_account["id"]), wotkit_update_data)
         
     except Exception as e:
         session.rollback()

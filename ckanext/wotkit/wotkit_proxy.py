@@ -50,7 +50,7 @@ def createWotkitAccount(data):
 
 def updateWotkitAccount(username, data):
     url = _api_url + "/users/" + username
-    response = getBasicAuthenticationResponse(url, _admin_id, _admin_key, "POST", data)
+    response = getBasicAuthenticationResponse(url, _admin_id, _admin_key, "PUT", data)
     if response.ok:
         log.info("Updated wotkit account: " + str(data))
         return True
