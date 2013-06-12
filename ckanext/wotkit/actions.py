@@ -269,8 +269,7 @@ def wotkit_harvest_module(context, data_dict):
         package_dict['resources'].append({'url': wotkit_api_url + "/sensors/" + wotkit_user + "." + sensorName,
                                           'name': sensorName,
                                           'format': 'application/json',
-                                          'description': "Link to Wotkit API. " + sensor_dict["description"],
-                                          '__extras': sensor_dict})
+                                          'description': "Link to Wotkit API. " + sensor_dict["description"]})
         package_dict['resources'].append({'url': wotkit_url + "/sensors/" + wotkit_user + "." + sensorName + "/monitor",
                                           'name': sensorName,
                                           'format': 'text/html',
