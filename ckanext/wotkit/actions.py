@@ -63,6 +63,13 @@ def user_show(context, data_dict):
     """Override default user_show action to also include wotkit credentials"""
     # Call default user_show, which handles authorization
     user_dict = logic.action.get.user_show(context, data_dict)
+    
+    try:
+        wotkit_account = wotkit_proxy.getWotkitAccount(data_dict["id"])
+        user_dict["timezone"] = wotkit_account["timeZone"]
+    except Exception as e:
+        log.warning("Failed to query wotkit account for user: %s" % data_dict["id"])
+        #raise logic.ValidationError({"Failed to query wotkit account for user": " "})
     #wotkit_dict = _get_action("user_wotkit_credentials")(context, data_dict)
     #user_dict["wotkit_id"] = wotkit_dict.get("wotkit_id", None)
     #user_dict["wotkit_password"] = wotkit_dict.get("wotkit_password", None)
@@ -90,7 +97,7 @@ def user_create(context, data_dict):
             "email": user_model.email,
             "firstname": user_model.name,
             "lastname": user_model.fullname,
-            "timezone": data_dict["timezone"]}
+            "timeZone": data_dict["timezone"]}
     
     if wotkit_proxy.createWotkitAccount(data):
         log.debug("Success creating wotkit account")
@@ -124,8 +131,8 @@ def user_update(context, data_dict):
     if user_model is None:
         raise logic.ValidationError({'User was not found in ckan model.': " "})
     
-    
-    if not wotkit_proxy.getWotkitAccount(user_model.name):
+    wotkit_account = wotkit_proxy.getWotkitAccount(user_model.name)
+    if not wotkit_account:
         raise logic.ValidationError({'User was not found in the Wotkit, make sure username %s exists in Wotkit' % user_model.name: " "})
     
     
@@ -142,10 +149,13 @@ def user_update(context, data_dict):
         updated_user = logic.action.update.user_update(context, data_dict)
         
         
-        wotkit_update_data = {"email": updated_user["email"],
+        wotkit_update_data = {"id": wotkit_account["id"],
+                              "email": updated_user["email"],
                               "firstname": updated_user["name"],
-                              "lastname": updated_user["fullname"],
-                              "timezone": data_dict["timezone"]}
+                              "lastname": updated_user["fullname"]}
+        
+        if "timezone" in data_dict:
+            wotkit_update_data["timeZone"] = data_dict["timezone"]
         
         if data_dict["password1"]:
             wotkit_update_data["password"] = data_dict["password1"]

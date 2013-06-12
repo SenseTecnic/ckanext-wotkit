@@ -19,16 +19,20 @@
       {{ form.info(_("You will receive notification emails from {site_title}, e.g. when you have new activities on your dashboard.".format(site_title=g.site_title)), classes=['info-help-tight']) }}
       {% endcall %}
     {% endif %}
-
-	<select classes=["control-medium"] name="timezone" id="field-timezone">
-		{% for timezone in data.timezones %}
-			{% if timezone == data.timezone %}
-				<option selected value="{{ timezone }}">{{ timezone }}</option>	
-		    {% else %}
-		    	<option value="{{ timezone }}">{{ timezone }}</option>
-		    {% endif %}
-		{% endfor %}
-	</select>
+	<div class="control-group control-medium">
+		<label class="control-label" for="field-timezone" >Timezone</label>
+		<div class="controls">
+			<select name="timezone" id="field-timezone">
+				{% for timezone in data.timezones %}
+					{% if timezone == data.timezone %}
+						<option selected value="{{ timezone }}">{{ timezone }}</option>	
+				    {% else %}
+				    	<option value="{{ timezone }}">{{ timezone }}</option>
+				    {% endif %}
+				{% endfor %}
+			</select>
+		</div>
+	</div>
   </fieldset>
 
   <fieldset>

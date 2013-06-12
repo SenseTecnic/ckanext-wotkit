@@ -7,15 +7,20 @@
   {{ form.input("email", id="field-email", label=_("Email"), type="email", placeholder="joe@example.com", value=data.email, error=errors.email, classes=["control-medium"]) }}
   {{ form.input("password1", id="field-password", label=_("Password"), type="password", placeholder="••••••••", value=data.password1, error=errors.password1, classes=["control-medium"]) }}
   {{ form.input("password2", id="field-confirm-password", label=_("Confirm"), type="password", placeholder="••••••••", value=data.password2, error=errors.password1, classes=["control-medium"]) }}  
-  <select classes=["control-medium"] name="timezone" id="field-timezone">
-  {% for timezone in data.timezones %}
-  	{% if timezone == "UTC" %}
-  		<option selected value="{{ timezone }}">{{ timezone }}</option>	
-  	{% else %}
-  		<option value="{{ timezone }}">{{ timezone }}</option>	
-  	{% endif %}
-  {% endfor %}
-  </select>
+	<div class="control-group control-medium">
+		<label class="control-label" for="field-timezone" >Timezone</label>
+		<div class="controls">
+			<select name="timezone" id="field-timezone">
+				{% for timezone in data.timezones %}
+					{% if timezone == "UTC" %}
+						<option selected value="{{ timezone }}">{{ timezone }}</option>	
+				    {% else %}
+				    	<option value="{{ timezone }}">{{ timezone }}</option>
+				    {% endif %}
+				{% endfor %}
+			</select>
+		</div>
+	</div>
   
   <div class="form-actions">
     <button class="btn btn-primary" type="submit" name="save">{{ _("Create Account") }}</button>

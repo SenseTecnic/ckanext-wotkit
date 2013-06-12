@@ -71,6 +71,7 @@ class WotkitPlugin(SingletonPlugin):
         #log.debug("Initializing Wotkit Plugin Actions")
         return {"user_update": ckanext.wotkit.actions.user_update,
                 "user_create": ckanext.wotkit.actions.user_create,
+                "user_show": ckanext.wotkit.actions.user_show,
                 "wotkit": ckanext.wotkit.actions.wotkit,
                 "wotkit_harvest_module": ckanext.wotkit.actions.wotkit_harvest_module,
                 "wotkit_get_sensor_module_import": ckanext.wotkit.actions.wotkit_get_sensor_module_import,

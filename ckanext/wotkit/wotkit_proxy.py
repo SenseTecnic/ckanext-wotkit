@@ -79,7 +79,7 @@ def initWotkitUrls(wotkit_url, api_url, processor_url, admin_id, admin_key):
 
 def getBasicAuthenticationResponse(url, user, pwd, http_method = "GET", data = None):
     """Connect to wotkit api with basic authentication given by user, pwd"""
-    
+    log.debug("URL: " + url + ", params: " + str(data))
     content_type = {'content-type': 'application/json'}
     if not http_method:
         http_method = "GET"    
