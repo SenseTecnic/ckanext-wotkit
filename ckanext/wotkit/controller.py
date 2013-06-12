@@ -41,6 +41,7 @@ import json
 from pytz import common_timezones
 import wotkit_proxy
 from repoze.who.plugins.auth_tkt import AuthTktCookiePlugin
+import sensors.sensetecnic as sensetecnic
 
 class HackedStorageAPIController(StorageAPIController):
     """ Dirty hack to deal with the /data URL we use. Ckan has issues with route handling when it doesn't run as route path / """
@@ -111,7 +112,7 @@ class WotkitUserController(UserController):
         session['logout_came_from'] = came_from
         session.save()
         
-        log.warning("came from: " + str(came_from))
+        log.debug("came from: " + str(came_from))
         h.redirect_to(self._get_repoze_handler('logout_handler_path'), came_from=came_from)
 
     def logged_out(self):
@@ -121,16 +122,17 @@ class WotkitUserController(UserController):
         # we need to get our language info back and the show the correct page
         lang = session.get('lang')
         came_from = session.get('logout_came_from')
-        log.warning("came from: " + str(came_from))
+        log.debug("came from: " + str(came_from))
         c.user = None
         session.delete()
         if came_from:
-            h.redirect_to(locale=lang, controller='user', action='logged_out_page')
-        else:
             import routes
+            redirect_url = sensetecnic.getWotkitUrl() + "/" + str(came_from)
+            routes.redirect_to(redirect_url)
+        else:
             # redirect user to logout url
             url = request.environ['repoze.who.plugins']['friendlyform'].post_logout_url
-            routes.redirect_to(url)
+            h.redirect_to(url)
     
     def _add_wotkit_credentials_to_schema(self, schema):
         schema['timezone'] = [ignore_missing, unicode]
