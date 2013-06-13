@@ -15,6 +15,8 @@ import requests
 from datetime import datetime
 import logging
 log = logging.getLogger(__name__)
+import traceback
+
 
 BROKER_BASE_URL='http://localhost:8800/osgibroker/event'
 STS_WOTKIT_URL=''
@@ -142,42 +144,26 @@ def getSensor(sensorName, user = STS_ID, password = STS_KEY):
 
 def checkAndRegisterSensor(sensor, user = None, password = None):
 
-    sensorExists = getSensor(sensor["name"], user, password)
-    if sensorExists: return True        
-    
-        #only register non-existing ones
+    sensor_data = getSensor(str(sensor["name"]), user, password)
+
+
     jsonSensor = json.dumps(sensor)
-    log.debug( "JSON DUMP of register: " + jsonSensor)
+    log.debug( "JSON DUMP of register sensor schema: " + jsonSensor)
     user, password = _checkPassword(user, password)
-    # send authorization headers preemptively otherwise we get redirected to a login page
-    base64string = base64.encodestring('%s:%s' % (user, password))[:-1]
-        
-    headers = {
-        'User-Agent': 'httplib',
-        'Content-Type': 'application/json',
-        'Authorization': "Basic %s" % base64string
-    }
-    log.debug( "Headers: " + str(headers))
-    
     url = STS_API_URL+'/sensors'
-    req = urllib2.Request(url,jsonSensor, headers)
-    log.debug("registering sensor: " + url)
-    try:
-        response = urllib2.urlopen(req)
-        if response.code == 201:
-            log.debug("success registering sensor")
-            return True
-        else:
-            print "Not Success: Code: " + response.getCode()
-    except urllib2.HTTPError, e:
-        if (e.code != 204):
-            print '%s while registering: %s' % (e,sensor["name"])
-            raise SenseTecnicError(e,e)
-            print e.message
-    except urllib2.URLError, e:
-        print 'error - registering sensor: %s' % (sensor["name"])
-        raise SenseTecnicError('URLError while registering %s' % (sensor["name"]),e)
-
-    return False
+    headers = {"content-type": "application/json"}
+    # send authorization headers premptively otherwise we get redirected to a login page
 
 
+    if sensor_data: 
+        url = url + "/" + str(sensor_data["id"])
+        response = requests.put(url = url, auth=(user, password), data = jsonSensor, headers = headers)
+    else:
+        response = requests.post(url = url, auth=(user, password), data = jsonSensor, headers = headers)
+            
+    if response.ok:
+        log.debug("success registering/updating sensor schema")
+        return True
+    else:
+        log.warning("Error while registering/updating sensor %s to url: %s  " % (sensor["name"], url))
+        return False

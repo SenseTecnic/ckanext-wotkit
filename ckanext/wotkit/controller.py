@@ -127,7 +127,7 @@ class WotkitUserController(UserController):
         session.delete()
         if came_from:
             import routes
-            redirect_url = sensetecnic.getWotkitUrl() + "/" + str(came_from)
+            redirect_url = sensetecnic.getWotkitUrl() + str(came_from)
             routes.redirect_to(redirect_url)
         else:
             # redirect user to logout url

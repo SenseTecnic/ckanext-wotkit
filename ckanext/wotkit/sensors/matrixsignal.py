@@ -74,7 +74,10 @@ def initLocationInfo():
     sensors = location_info.findAll("predefinedLocation", attrs={"id": True})
     global location_map
     for sensor in sensors:
-        location_map[sensor["id"]] = (sensor.find("latitude").string, sensor.find("longitude").string)
+        try:
+            location_map[sensor["id"]] = (sensor.find("latitude").string, sensor.find("longitude").string)
+        except Exception as e:
+            log.debug("Failed to obtain lat long for predefined location: %s" % str(sensor["id"]))
 
     print "done init location info.."
     
