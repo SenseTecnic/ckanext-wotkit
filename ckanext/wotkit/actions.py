@@ -64,11 +64,13 @@ def user_show(context, data_dict):
     # Call default user_show, which handles authorization
     user_dict = logic.action.get.user_show(context, data_dict)
     
-    try:
-        wotkit_account = wotkit_proxy.getWotkitAccount(data_dict["id"])
-        user_dict["timezone"] = wotkit_account["timeZone"]
-    except Exception as e:
-        log.warning("Failed to query wotkit account for user: %s" % data_dict["id"])
+    if "show_wotkit_account" in data_dict:
+        try:
+            wotkit_account = wotkit_proxy.getWotkitAccount(data_dict["id"])
+            user_dict["timezone"] = wotkit_account["timeZone"]
+        except Exception as e:
+            raise logic.ValidationError({"Failed to query wotkit account for user: %s" % data_dict["id"]: " "})
+            
         #raise logic.ValidationError({"Failed to query wotkit account for user": " "})
     #wotkit_dict = _get_action("user_wotkit_credentials")(context, data_dict)
     #user_dict["wotkit_id"] = wotkit_dict.get("wotkit_id", None)
@@ -147,8 +149,7 @@ def user_update(context, data_dict):
     # This should be ok since the above database update will rollback if there is an error
     try:
         updated_user = logic.action.update.user_update(context, data_dict)
-        
-        
+                
         wotkit_update_data = {"email": updated_user["email"],
                               "firstname": updated_user["name"],
                               "lastname": updated_user["fullname"]}
@@ -159,7 +160,7 @@ def user_update(context, data_dict):
         if data_dict["password1"]:
             wotkit_update_data["password"] = data_dict["password1"]
     
-    
+        # need to update by id, not by name here
         wotkit_proxy.updateWotkitAccount(str(wotkit_account["id"]), wotkit_update_data)
         
     except Exception as e:

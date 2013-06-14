@@ -41,7 +41,8 @@ import json
 from pytz import common_timezones
 import wotkit_proxy
 from repoze.who.plugins.auth_tkt import AuthTktCookiePlugin
-import sensors.sensetecnic as sensetecnic
+import config_globals
+
 
 class HackedStorageAPIController(StorageAPIController):
     """ Dirty hack to deal with the /data URL we use. Ckan has issues with route handling when it doesn't run as route path / """
@@ -101,19 +102,18 @@ class WotkitUserController(UserController):
 
     def logout(self):
         """
-        When user logs out, it executes this first. Modifies original logout to track parameter came_from.
-        If came_from is specified, it logs out to the normal ckan logout URL.
-        If came_from is ignored, it makes sure to logout from wotkit side by logging out of ckan then redirecting to wotkit
+        When user logs out, this is the first function that is hit when the URL is .../_logout
+        came_from parameter is a comma separated list of logout redirects that are redirected in order.        
         """
         # save our language in the session so we don't lose it
         session['lang'] = request.environ.get('CKAN_LANG')
         
+        # Save in session HACK
         came_from = request.params.get('came_from', '')
         session['logout_came_from'] = came_from
         session.save()
         
-        log.debug("came from: " + str(came_from))
-        h.redirect_to(self._get_repoze_handler('logout_handler_path'), came_from=came_from)
+        h.redirect_to(self._get_repoze_handler('logout_handler_path'))
 
     def logged_out(self):
         """
@@ -126,13 +126,19 @@ class WotkitUserController(UserController):
         c.user = None
         session.delete()
         if came_from:
+            # extract came_from
             import routes
-            redirect_url = sensetecnic.getWotkitUrl() + str(came_from)
-            routes.redirect_to(redirect_url)
+            (next_redirect_url, comma, remaining_came_from) = came_from.partition(',')
+            if remaining_came_from:
+                redirect_url = next_redirect_url + "?came_from=" + remaining_came_from
+            else:
+                redirect_url = next_redirect_url
+            log.debug("redirecting logout to: " + redirect_url)
+            routes.redirect_to(str(redirect_url))
         else:
             # redirect user to logout url
-            url = request.environ['repoze.who.plugins']['friendlyform'].post_logout_url
-            h.redirect_to(url)
+            url = config_globals.get_logout_success_url()
+            routes.redirect_to(str(url))
     
     def _add_wotkit_credentials_to_schema(self, schema):
         schema['timezone'] = [ignore_missing, unicode]
