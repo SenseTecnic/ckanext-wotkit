@@ -42,7 +42,7 @@ from pytz import common_timezones
 import wotkit_proxy
 from repoze.who.plugins.auth_tkt import AuthTktCookiePlugin
 import config_globals
-
+import routes
 
 class HackedStorageAPIController(StorageAPIController):
     """ Dirty hack to deal with the /data URL we use. Ckan has issues with route handling when it doesn't run as route path / """
@@ -85,7 +85,6 @@ class WotkitUserController(UserController):
                             user_dict['display_name'])
             if came_from:
                 # HACK redirect to ignore the base URL /data
-                import routes
                 return routes.redirect_to(str(came_from))
             return self.me()
         else:
@@ -127,7 +126,7 @@ class WotkitUserController(UserController):
         session.delete()
         if came_from:
             # extract came_from
-            import routes
+
             (next_redirect_url, comma, remaining_came_from) = came_from.partition(',')
             if remaining_came_from:
                 redirect_url = next_redirect_url + "?came_from=" + remaining_came_from
