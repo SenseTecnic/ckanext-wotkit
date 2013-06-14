@@ -41,12 +41,7 @@ def ckanAuthorization(context, data_dict):
     """
     
     #Simply check if user is logged in, and also has a wotkit account mapping
-    user = context['user']
-    
-    #Skip if authorization provided
-    if not user and data_dict["wotkit_id"] and data_dict["wotkit_password"]:
-        return {'success': True}
-        
+    user = context['user']      
     
     if user:
         return {'success': True}
@@ -64,6 +59,7 @@ def user_show(context, data_dict):
     # Call default user_show, which handles authorization
     user_dict = logic.action.get.user_show(context, data_dict)
     
+    # only check wotkit account if we need to
     if "show_wotkit_account" in data_dict:
         try:
             wotkit_account = wotkit_proxy.getWotkitAccount(data_dict["id"])
@@ -88,8 +84,7 @@ def user_create(context, data_dict):
     user_dict = logic.action.create.user_create(context, data_dict)
     session = context['session']
     user_model = context["user_obj"]
-    
-    
+        
     if wotkit_proxy.getWotkitAccount(user_model.name):
         session.rollback()
         raise logic.ValidationError({"User already exists in wotkit": " "})

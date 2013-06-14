@@ -44,7 +44,7 @@ def get_logout_success_url():
 
 def get_logout_all_url():
     """ Logout URL that triggers the redirects done to logout of all wotkit, ckan sites. """
-    wotkit_logout_url = wotkit_url + "/bridge"
+    wotkit_logout_url = wotkit_url + "/logout/bridge"
     return ckan_url + "/user/_logout?came_from=" + wotkit_logout_url + "," + logout_success_url
     
 def get_smartstreets_base_url():
