@@ -31,7 +31,7 @@ def getWotkitAccount(username):
     url = _api_url + "/users/" + username
     response = requests.get(url, auth = (_admin_id, _admin_key))
     
-    if response.status_code == 401 or response.status_code == 404:
+    if not response.ok:
         log.info("Wotkit account username %s not found." % username)
         return None
     else:
@@ -44,9 +44,9 @@ def createWotkitAccount(data):
         log.info("Created wotkit account: " + str(data))
         return True
     else:
-        log.warning("Failed to create wotkit account: " + str(data) + ", code: " + str(response.status_code))
-        log.warning(response.text)
-        return False
+        msg = "Failed to create wotkit account: " + str(data) + ", code: " + str(response.status_code) + "message: " + str(response.text)
+        log.warning(msg)
+        raise logic.ValidationError(msg)
 
 def updateWotkitAccount(username, data):
     url = _api_url + "/users/" + username

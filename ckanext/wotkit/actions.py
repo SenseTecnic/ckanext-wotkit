@@ -61,11 +61,10 @@ def user_show(context, data_dict):
     
     # only check wotkit account if we need to
     if data_dict.get("link_wotkit", False):
-        try:
-            wotkit_account = wotkit_proxy.getWotkitAccount(data_dict["id"])
-            user_dict["timezone"] = wotkit_account["timeZone"]
-        except Exception as e:
+        wotkit_account = wotkit_proxy.getWotkitAccount(data_dict["id"])
+        if not wotkit_account:
             raise logic.NotAuthorized("Failed to query wotkit account for user: %s" % data_dict["id"])
+        user_dict["timezone"] = wotkit_account["timeZone"]
 
         #raise logic.ValidationError({"Failed to query wotkit account for user": " "})
     #wotkit_dict = _get_action("user_wotkit_credentials")(context, data_dict)
@@ -96,12 +95,13 @@ def user_create(context, data_dict):
             "lastname": user_model.fullname,
             "timeZone": data_dict["timezone"]}
     
-    if wotkit_proxy.createWotkitAccount(data):
+    try:
+        wotkit_proxy.createWotkitAccount(data)
         log.debug("Success creating wotkit account")
-    else:
+    except logic.ValidationError as e:
         log.debug("Failed creating wotkit account")
         session.rollback()
-        raise logic.ValidationError({"Failed user creation in wotkit": " "})
+        raise logic.ValidationError({"Failed user creation in wotkit: Error: " + str(e): " "})
     
 
     #wotkit_create_dict = {"ckan_id": user_model.id, 
