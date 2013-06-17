@@ -69,17 +69,12 @@ class WotkitUserController(UserController):
         i18n.set_lang(lang)
 
         if c.user:
-            if not wotkit_proxy.getWotkitAccount(c.user):
-                c.user = None
-                session.delete()
-                response.delete_cookie("auth_tkt")
-
-                return self.login(error="Failed Wotkit Login. Please contact the system administrator. (ckan and wotkit login must be the synchronized)")
-            
             context = None
-            data_dict = {'id': c.user}
-
-            user_dict = get_action('user_show')(context, data_dict)
+            data_dict = {'id': c.user, 'link_wotkit': True}
+            try:
+                user_dict = get_action('user_show')(context, data_dict)
+            except logic.NotAuthorized as e:
+                return self.login(error=str(e))
 
             h.flash_success(_("%s is now logged in") %
                             user_dict['display_name'])
@@ -138,7 +133,7 @@ class WotkitUserController(UserController):
             # redirect user to logout url
             url = config_globals.get_logout_success_url()
             routes.redirect_to(str(url))
-    
+
     def _add_wotkit_credentials_to_schema(self, schema):
         schema['timezone'] = [ignore_missing, unicode]
 
@@ -167,7 +162,7 @@ class WotkitUserController(UserController):
                 id = c.userobj.id
             else:
                 abort(400, _('No user specified'))
-        data_dict = {'id': id}
+        data_dict = {'id': id, "link_wotkit": True}
 
         if (context['save']) and not data:
             return self._save_edit(id, context)
@@ -202,7 +197,7 @@ class WotkitUserController(UserController):
         self._setup_template_variables({'model': model,
                                         'session': model.Session,
                                         'user': c.user or c.author},
-                                       data_dict)
+                                        data_dict)
 
         c.is_myself = True
         c.show_email_notifications = h.asbool(

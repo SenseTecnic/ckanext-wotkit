@@ -60,13 +60,13 @@ def user_show(context, data_dict):
     user_dict = logic.action.get.user_show(context, data_dict)
     
     # only check wotkit account if we need to
-    if "show_wotkit_account" in data_dict:
+    if data_dict.get("link_wotkit", False):
         try:
             wotkit_account = wotkit_proxy.getWotkitAccount(data_dict["id"])
             user_dict["timezone"] = wotkit_account["timeZone"]
         except Exception as e:
-            raise logic.ValidationError({"Failed to query wotkit account for user: %s" % data_dict["id"]: " "})
-            
+            raise logic.NotAuthorized("Failed to query wotkit account for user: %s" % data_dict["id"])
+
         #raise logic.ValidationError({"Failed to query wotkit account for user": " "})
     #wotkit_dict = _get_action("user_wotkit_credentials")(context, data_dict)
     #user_dict["wotkit_id"] = wotkit_dict.get("wotkit_id", None)

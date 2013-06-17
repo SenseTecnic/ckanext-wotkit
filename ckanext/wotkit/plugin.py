@@ -50,8 +50,7 @@ class WotkitPlugin(SingletonPlugin):
     def update_config(self, config):
         """Add template directory of this extension to override the default ckan templates"""
         #Probably have to add directories for css / jscript files later
-        #toolkit.add_template_directory(config, "theme/templates")
-        pass
+        toolkit.add_template_directory(config, "theme/templates")
 
     def configure(self, config):
         """Implements IConfigurable plugin that initializes db tables.
