@@ -152,8 +152,10 @@ def user_update(context, data_dict):
         if "timezone" in data_dict:
             wotkit_update_data["timeZone"] = data_dict["timezone"]
         
-        if data_dict["password1"]:
+        if "password1" in data_dict and data_dict["password1"]:
             wotkit_update_data["password"] = data_dict["password1"]
+        elif "password" in data_dict and data_dict["password"]:
+            wotkit_update_data["password"] = data_dict["password"]
     
         # need to update by id, not by name here
         wotkit_proxy.updateWotkitAccount(str(wotkit_account["id"]), wotkit_update_data)
