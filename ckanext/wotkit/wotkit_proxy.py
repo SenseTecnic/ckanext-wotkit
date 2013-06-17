@@ -46,7 +46,7 @@ def createWotkitAccount(data):
     else:
         msg = "Failed to create wotkit account: " + str(data) + ", code: " + str(response.status_code) + "message: " + str(response.text)
         log.warning(msg)
-        raise logic.ValidationError(msg)
+        raise logic.NotAuthorized(msg)
 
 def updateWotkitAccount(username, data):
     url = _api_url + "/users/" + username
@@ -55,9 +55,9 @@ def updateWotkitAccount(username, data):
         log.info("Updated wotkit account: " + str(data))
         return True
     else:
-        log.warning("Failed to create wotkit account: " + str(data) + ", code: " + str(response.status_code))
+        log.warning("Failed to update wotkit account: " + str(data) + ", code: " + str(response.status_code))
         log.warning(response.text)
-        raise logic.ValidationError(response.text)
+        raise logic.NotAuthorized(response.text)
     
 def deleteWotkitAccount(user):
     pass

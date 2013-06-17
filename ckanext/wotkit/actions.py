@@ -98,10 +98,10 @@ def user_create(context, data_dict):
     try:
         wotkit_proxy.createWotkitAccount(data)
         log.debug("Success creating wotkit account")
-    except logic.ValidationError as e:
+    except logic.NotAuthorized as e:
         log.debug("Failed creating wotkit account")
         session.rollback()
-        raise logic.ValidationError({"Failed user creation in wotkit: Error: " + str(e): " "})
+        raise logic.ValidationError({"Failed user creation in wotkit": " "})
     
 
     #wotkit_create_dict = {"ckan_id": user_model.id, 
