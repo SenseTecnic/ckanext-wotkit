@@ -88,11 +88,12 @@ def user_create(context, data_dict):
         session.rollback()
         raise logic.ValidationError({"User already exists in wotkit": " "})
     
+    
     data = {"username": user_model.name,
             "password": user_model.password1,
             "email": user_model.email,
-            "firstname": user_model.name,
-            "lastname": user_model.fullname,
+            "firstname": user_model.fullname,
+            "lastname": " ",
             "timeZone": data_dict["timezone"]}
     
     try:
@@ -146,8 +147,8 @@ def user_update(context, data_dict):
         updated_user = logic.action.update.user_update(context, data_dict)
                 
         wotkit_update_data = {"email": updated_user["email"],
-                              "firstname": updated_user["name"],
-                              "lastname": updated_user["fullname"]}
+                              "firstname": updated_user["fullname"],
+                              "lastname": " "}
         
         if "timezone" in data_dict:
             wotkit_update_data["timeZone"] = data_dict["timezone"]
