@@ -31,7 +31,7 @@ def getSensorSchema():
 def getSensorRegistration():
     sensor = {
               "name":SENSOR_NAME,
-              "longName":"Future planned events that affect traffic",
+              "longName":"Unplanned events that affect traffic",
               "description":"Sensor data parsed from http://hatrafficinfo.dft.gov.uk/feeds/datex/England/UnplannedEvent/content.xml",
               "latitude": "51.506178",
               "longitude": "-0.113995",
