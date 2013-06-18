@@ -16,7 +16,7 @@ def init(config):
     """
     Initializes global URL's used. Input config is supplied from plugin.py and is read from the configuration .ini file
     """
-    global wotkit_url, wotkit_api_url, ckan_url, smarstreets_base_url, smarstreets_about_url, logout_success_url
+    global wotkit_url, wotkit_api_url, ckan_url, smarstreets_base_url, smartstreets_about_url, logout_success_url
     global wotkit_admin_id, wotkit_admin_key
     
     wotkit_url = get_required_config(config, "wotkit.wotkit_url")
