@@ -19,11 +19,11 @@ import traceback
 
 
 BROKER_BASE_URL='http://localhost:8800/osgibroker/event'
-STS_WOTKIT_URL=''
-STS_API_URL=''
+STS_WOTKIT_URL='http://guiness.sensetecnic.com/wotkit'
+STS_API_URL='http://guiness.sensetecnic.com/wotkit/api'
 STS_PROCESSOR_URL=''
-STS_ID=''
-STS_KEY=''
+STS_ID='mduppes'
+STS_KEY='aMUSEment2'
 
 def init(wotkit_url, api_url, processor_url, id, key):
     """

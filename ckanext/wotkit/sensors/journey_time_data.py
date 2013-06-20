@@ -1,8 +1,8 @@
 from bs4 import BeautifulSoup, NavigableString
 import sensetecnic
 import requests
-
-
+import traceback
+import highways_agency_common
 import logging
 log = logging.getLogger(__name__)
 
@@ -13,25 +13,7 @@ location_info = None
 
 location_map = {}
 
-def initLocationInfo():
-    print "init location info.."
-    r = requests.get("http://hatrafficinfo.dft.gov.uk/feeds/datex/England/PredefinedLocationJourneyTimeSections/content.xml")
-    
-    location_info = BeautifulSoup(r.text, "xml")
-    sensors = location_info.findAll("predefinedLocation", attrs={"id": True})
-    global location_map
-    for sensor in sensors:
-        # linear segments
-        from_location = sensor.find("from")
-        to_location = sensor.find("to")
-        
-        # from lat/long, to lat/lng
-        try:
-            location_map[sensor["id"]] = ((from_location.pointCoordinates.latitude.string, from_location.pointCoordinates.longitude.string), 
-                                          (to_location.pointCoordinates.latitude.string, to_location.pointCoordinates.longitude.string))
-        except Exception as e:
-            print "to/from fields?"
-    print "done init location info.."
+
     
 def findLocationInfo(id):
     return location_map[id]
@@ -40,10 +22,12 @@ def getSensorSchema():
     schema = [
               {"name":"lat","type":"NUMBER","required":False,"longName":"latitude"},
               {"name":"lng","type":"NUMBER","required":False,"longName":"longitude"},
+              {"name":"direction","type":"STRING","required":False,"longName":"Direction"},
               {"name":"value","type":"NUMBER","required":False,"longName":"Expected Traffic time", "units":"seconds"},
               {"name":"idealtime","type":"NUMBER","required":False,"longName":"Ideal Traffic time (no traffic)", "units":"seconds"},
               {"name":"historictime","type":"NUMBER","required":False,"longName":"Historical Traffic time", "units":"seconds"},
               {"name":"locationref","type":"STRING","required":False,"longName":"DATEX2 Traffic Location Reference"},
+              {"name":"locationname","type":"STRING","required":False,"longName":"Location Name"},
               {"name":"sourceid","type":"NUMBER","required":False,"longName":"DATEX2 Traffic Link ID"},
               {"name":"recordedtime","type":"STRING","required":False,"longName":"Timestamp of traffic record"},
               {"name":"latfrom","type":"NUMBER","required":False,"longName":"latitude from"},
@@ -79,29 +63,55 @@ def checkSensorExist():
 def updateWotkit():
     checkSensorExist()
     
-    initLocationInfo()
+    highways_agency_common.initLocationInfo("http://hatrafficinfo.dft.gov.uk/feeds/datex/England/PredefinedLocationJourneyTimeSections/content.xml")
     
     r = requests.get(DATA_GET_URI)
     text = r.text
     parsedXML = BeautifulSoup(text, "xml")
     combined_data = []
+    
+    errors = {}
+    errors["location"] = 0
+    for field in getSensorSchema():
+        errors[field["name"]] = 0
+        
     for data in parsedXML.findAll("elaboratedData"):
         wotkit_data = {}
         try:
-            wotkit_data["sourceid"] = data.sourceInformation.sourceIdentification.string
-            wotkit_data["recordedtime"] = data.basicDataValue.time.string
-            wotkit_data["locationref"] = data.basicDataValue.affectedLocation.locationContainedInGroup.predefinedLocationReference.string
-            wotkit_data["value"] = data.basicDataValue.travelTime.string
-            wotkit_data["idealtime"] = data.basicDataValue.freeFlowTravelTime.string
-            wotkit_data["historictime"] = data.basicDataValue.normallyExpectedTravelTime.string
-            (wotkit_data["latfrom"], wotkit_data["lngfrom"]),(wotkit_data["latto"], wotkit_data["lngto"]) = findLocationInfo(wotkit_data["locationref"])
-            # For now lng lat same as from
-            wotkit_data["lat"], wotkit_data["lng"] = wotkit_data["latfrom"], wotkit_data["lngfrom"]
-            wotkit_data["timestamp"] = sensetecnic.getWotkitTimeStamp()
+            try: wotkit_data["sourceid"] = data.sourceInformation.sourceIdentification.string
+            except: errors["sourceid"] += 1
+            
+            try: wotkit_data["recordedtime"] = data.basicDataValue.time.string
+            except: errors["recordedtime"] += 1
+            
+            try: wotkit_data["locationref"] = data.basicDataValue.affectedLocation.locationContainedInGroup.predefinedLocationReference.string
+            except: errors["locationref"] += 1
+            
+            try: wotkit_data["value"] = data.basicDataValue.travelTime.string
+            except:
+                # required value so set to -1
+                wotkit_data["value"] = -1 
+                errors["value"] += 1
+                
+            try: wotkit_data["idealtime"] = data.basicDataValue.freeFlowTravelTime.string
+            except: errors["idealtime"] += 1
+            
+            try: wotkit_data["historictime"] = data.basicDataValue.normallyExpectedTravelTime.string
+            except: errors["historictime"] += 1
+            
+            try: highways_agency_common.populateLocationInfo(wotkit_data, wotkit_data["locationref"])
+            except: errors["location"] += 1
+            
+            try: wotkit_data["timestamp"] = sensetecnic.getWotkitTimeStamp()
+            except: errors["timestamp"] += 1
             
             combined_data.append(wotkit_data)
         except Exception as e:
             log.debug("Failed to parse traffic info: " + str(e))
+            
+    if any(errors.values()):
+        log.warning("Errors in parsing: " + str(errors))
+        
     try:
         sensetecnic.sendBulkData(SENSOR_NAME, None, None, combined_data)
     except Exception as e:

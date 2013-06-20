@@ -1,14 +1,13 @@
 from bs4 import BeautifulSoup, NavigableString
 import sensetecnic
 import requests
-
+import traceback
 import logging
 log = logging.getLogger(__name__)
-
+import highways_agency_common
 DATA_GET_URI = "http://hatrafficinfo.dft.gov.uk/feeds/datex/England/MatrixSignals/content.xml"
 SENSOR_NAME = "matrix-signals"
 
-location_map = {}
 
 aspect_map = {
               "UDF": "Undefined",
@@ -66,37 +65,19 @@ aspect_map = {
               }
 
 
-def initLocationInfo():
-    print "init location info.."
-    r = requests.get("http://hatrafficinfo.dft.gov.uk/feeds/datex/England/PredefinedLocationVMSAndMatrix/content.xml")
-    
-    location_info = BeautifulSoup(r.text, "xml")
-    sensors = location_info.findAll("predefinedLocation", attrs={"id": True})
-    global location_map
-    for sensor in sensors:
-        try:
-            location_map[sensor["id"]] = (sensor.find("latitude").string, sensor.find("longitude").string)
-        except Exception as e:
-            log.debug("Failed to obtain lat long for predefined location: %s" % str(sensor["id"]))
-
-    print "done init location info.."
-    
-def findLocationInfo(id):
-    return location_map[id]
-
 def getSensorSchema():
     schema = [
               {"name":"lat","type":"NUMBER","required":False,"longName":"latitude"},
               {"name":"lng","type":"NUMBER","required":False,"longName":"longitude"},
-              {"name":"value","type":"NUMBER","required":False,"longName":"Fault if 1"},
+              {"name":"direction","type":"STRING","required":False,"longName":"Direction"},
               {"name":"starttime","type":"STRING","required":False,"longName":"Status start time"},
-              {"name":"updatedtime","type":"STRING","required":False,"longName":"Last updated time"},
+              {"name":"updatedtime","type":"STRING","required":False,"longName":"Status last updated time"},
               {"name":"locationref","type":"STRING","required":False,"longName":"DATEX2 Matrix Location Reference"},
               {"name":"matrixid","type":"STRING","required":False,"longName":"Matrix identifier"},
               {"name":"display","type":"STRING","required":False,"longName":"DATEX2 Aspect Displayed"},
-              {"name":"active","type":"STRING","required":False,"longName":"Matrix Status"},
-              {"name":"reason","type":"STRING","required":False,"longName":"Reason of status"}
-                            ]
+              {"name":"reason","type":"STRING","required":False,"longName":"Reason of status"},
+              {"name":"value","type":"NUMBER","required":False,"longName":"Always 0, ignore"},
+              ]
     return schema
 
 def getSensorRegistration():
@@ -124,31 +105,53 @@ def checkSensorExist():
 def updateWotkit():
     checkSensorExist()
     
-    initLocationInfo()
+    highways_agency_common.initLocationInfo("http://hatrafficinfo.dft.gov.uk/feeds/datex/England/PredefinedLocationVMSAndMatrix/content.xml")
     
     r = requests.get(DATA_GET_URI)
     text = r.text
     parsedXML = BeautifulSoup(text, "xml")
     combined_data = []
+
+    errors = {}
+    errors["location"] = 0
+    for field in getSensorSchema():
+        errors[field["name"]] = 0
+        
     for data in parsedXML.findAll("situationRecord"):
         wotkit_data = {}
         try:
-            wotkit_data["active"] = data.validity.validityStatus.string
-            wotkit_data["value"] = 0 if wotkit_data["active"] == "active" else 1 
-            wotkit_data["updatedtime"] = data.situationRecordVersionTime.string
-            wotkit_data["starttime"] = data.validity.validityTimeSpecification.overallStartTime.string
-            wotkit_data["locationref"] = data.groupOfLocations.locationContainedInGroup.predefinedLocationReference.string
-            wotkit_data["matrixid"] = data.matrixIdentifier.string
-            wotkit_data["display"] = aspect_map[data.aspectDisplayed.string]
+            wotkit_data["value"] = 0
+            try: wotkit_data["updatedtime"] = data.situationRecordVersionTime.string
+            except: errors["updatedtime"] += 1
             
+            try: wotkit_data["starttime"] = data.validity.validityTimeSpecification.overallStartTime.string
+            except: errors["starttime"] += 1
             
-            wotkit_data["reason"] = data.reasonForSetting.value.string
+            try: wotkit_data["locationref"] = data.groupOfLocations.locationContainedInGroup.predefinedLocationReference.string
+            except: errors["locationref"] += 1
+            
+            try: wotkit_data["matrixid"] = data.matrixIdentifier.string
+            except: errors["matrixid"] += 1
+            
+            try: wotkit_data["display"] = aspect_map[data.aspectDisplayed.string]
+            except: errors["display"] += 1
+            
+            try: wotkit_data["reason"] = data.reasonForSetting.value.string
+            except: errors["reason"] += 1
 
-            wotkit_data["lat"], wotkit_data["lng"] = findLocationInfo(wotkit_data["locationref"])
-            wotkit_data["timestamp"] = sensetecnic.getWotkitTimeStamp()
+            try: highways_agency_common.populateLocationInfo(wotkit_data, wotkit_data["locationref"])
+            except: errors["location"] += 1
+            
+            try: wotkit_data["timestamp"] = sensetecnic.getWotkitTimeStamp()
+            except: errors["timestamp"] += 1
+            
             combined_data.append(wotkit_data)
         except Exception as e:
-            log.debug("Failed to parse single traffic data: " + str(e))
+            log.debug("Failed to parse single matrix data item: " + traceback.format_exc())
+            
+    if any(errors.values()):
+        log.warning("Errors in parsing: " + str(errors))
+        
     try:
         sensetecnic.sendBulkData(SENSOR_NAME, None, None, combined_data)
     except Exception as e:
