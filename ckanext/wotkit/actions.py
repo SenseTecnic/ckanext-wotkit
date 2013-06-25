@@ -18,12 +18,15 @@ from model import WotkitUser
 
 from ckan.plugins import toolkit
 
+import ckan.lib.search as search
+
 log = getLogger(__name__)
 _get_or_bust = logic.get_or_bust
 _get_action = logic.get_action
 _check_access = logic.check_access
 
 import importlib
+from pylons import config
 
 """
 Functions in here are mostly accessible via ckan's action API:
@@ -52,6 +55,35 @@ def ckanAuthorization(context, data_dict):
 
     # Any user is authorized to see what she herself is following.
     #requested_user = model.User.get(data_dict.get('id'))
+
+@logic.side_effect_free
+def tag_counts(context, data_dict):
+    from ckan.lib.search.common import make_connection, SearchError, SearchQueryError
+
+    query = {
+        'rows': 0,
+        'q': '*:*',
+        'wt': 'json',
+        'fq': 'site_id:"%s"' % config.get('ckan.site_id'),
+        'facet': 'true',
+        'facet.field': 'tags'}
+        
+    query = search.query_for(model.Package)
+    conn = make_connection()
+
+    try:
+        data = json.loads(solr_response)
+        
+        results = []
+        solr_tags = data["response"]["facet_counts"]["facet_fields"]["tags"] 
+        for count, tags in solr_tags[::2]:
+            if count % 2 == 0:
+                # for every other tag:
+                results.append()
+                
+        
+    except Exception as e:
+        pass
 
 @logic.side_effect_free
 def user_show(context, data_dict):

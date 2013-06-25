@@ -105,6 +105,12 @@ def updateWotkit():
             try: wotkit_data["timestamp"] = sensetecnic.getWotkitTimeStamp()
             except: errors["timestamp"] += 1
             
+            for schema in getSensorSchema():
+                if schema["type"] == "NUMBER" and schema["name"] in wotkit_data and wotkit_data[schema["name"]]:
+                    try:
+                        wotkit_data[schema["name"]] = float(wotkit_data[schema["name"]])
+                    except Exception as e:
+                        errors[schema["name"]] += 1
             combined_data.append(wotkit_data)
         except Exception as e:
             log.debug("Failed to parse traffic info: " + str(e))

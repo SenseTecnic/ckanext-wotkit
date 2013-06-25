@@ -110,13 +110,22 @@ def updateWotkit():
                     del result["EstimatedTime"]
                     
                     result["timestamp"] = sensetecnic.getWotkitTimeStamp()
-                    log.debug(str(result))
+                    #log.debug(str(result))
+
+                    # change all strings to number where needed
+                    for schema in getSensorSchema():
+                        if schema["type"] == "NUMBER" and schema["name"] in result and result[schema["name"]]:
+                            try:
+                                result[schema["name"]] = float(result[schema["name"]])
+                            except Exception as e:
+                                errors[schema["name"]] += 1
+                                
                     combined_data.append(result)
                    
             except Exception as e:
                 errors["other"].append(traceback.format_exc())
     except Exception as e:
-        print "Error in retrieving data from london instant bus api"
+        log.warning("Error in retrieving data from london instant bus api")
     
     if any(errors.values()):
         log.warning("Errors in retrieving london instant bus data: " + str(errors))

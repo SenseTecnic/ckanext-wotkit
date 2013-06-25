@@ -59,8 +59,8 @@ def initLocationInfo(url):
             direction = location.find("tpegDirection")
             try:
                 # No name extraction since it is just the matrix/vms identifier
-                point_map[location["id"]] = {"lat": coordinates.latitude.string,
-                                             "lng": coordinates.longitude.string,
+                point_map[location["id"]] = {"lat": float(coordinates.latitude.string),
+                                             "lng": float(coordinates.longitude.string),
                                              "direction": direction.string
                                              }
             except:
@@ -74,8 +74,8 @@ def initLocationInfo(url):
             direction = location.find("tpegDirection")
             
             try:
-                linear_map[location["id"]] = {"from": (from_location.pointCoordinates.latitude.string, from_location.pointCoordinates.longitude.string),
-                                              "to": (to_location.pointCoordinates.latitude.string, to_location.pointCoordinates.longitude.string),
+                linear_map[location["id"]] = {"from": (float(from_location.pointCoordinates.latitude.string), float(from_location.pointCoordinates.longitude.string)),
+                                              "to": (float(to_location.pointCoordinates.latitude.string), float(to_location.pointCoordinates.longitude.string)),
                                               "direction": direction.string,
                                               "locationname":location.predefinedLocationName.value.string
                                               } 
@@ -137,7 +137,7 @@ def retrieveCommonEventFormat(url):
                     wotkit_data["lat"] = location.framedPoint.pointCoordinates.latitude.string
                     wotkit_data["lng"] = location.framedPoint.pointCoordinates.longitude.string
                     wotkit_data["latfrom"] = from_location.pointCoordinates.latitude.string
-                    wotkit_data["lngfrom"] = from_location.pointCoordinates.longitude.string                
+                    wotkit_data["lngfrom"] = from_location.pointCoordinates.longitude.string        
                     wotkit_data["latto"] = to_location.pointCoordinates.latitude.string
                     wotkit_data["lngto"] = to_location.pointCoordinates.longitude.string
                 except Exception as e:
@@ -179,6 +179,13 @@ def retrieveCommonEventFormat(url):
             try: wotkit_data["timestamp"] = sensetecnic.getWotkitTimeStamp()
             except: errors["timestamp"] += 1
             
+            for schema in getEventSensorSchema():
+                if schema["type"] == "NUMBER" and schema["name"] in wotkit_data and wotkit_data[schema["name"]]:
+                    try:
+                        wotkit_data[schema["name"]] = float(wotkit_data[schema["name"]])
+                    except Exception as e:
+                        errors[schema["name"]] += 1
+                
             combined_data.append(wotkit_data)
         except Exception as e:
             log.debug("Failed to parse single traffic data: " + traceback.format_exc())

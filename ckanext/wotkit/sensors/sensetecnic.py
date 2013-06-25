@@ -123,7 +123,6 @@ def getSensor(sensorName, user = STS_ID, password = STS_KEY):
     
     
     try:
-            
     
         url = STS_API_URL+'/sensors/'+user + '.' + sensorName
         req = requests.get(url, auth = (user, password))

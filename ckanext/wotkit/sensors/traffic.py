@@ -188,7 +188,15 @@ def updateWotkit():
             log.warning("Failed to parse traffic info item: " + traceback.format_exc())
             
         existing_data[source_id] = wotkit_data
-        
+    
+    for wotkit_data in existing_data:
+        for schema in getSensorSchema():
+            if schema["type"] == "NUMBER" and schema["name"] in wotkit_data and wotkit_data[schema["name"]]:
+                try:
+                    wotkit_data[schema["name"]] = float(wotkit_data[schema["name"]])
+                except Exception as e:
+                    errors[schema["name"]] += 1 
+    
     if any(errors.values()):
         log.warning("Errors in parsing: " + str(errors))
         

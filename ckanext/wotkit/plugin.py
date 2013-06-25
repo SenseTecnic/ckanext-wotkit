@@ -78,7 +78,8 @@ class WotkitPlugin(SingletonPlugin):
                 "wotkit": ckanext.wotkit.actions.wotkit,
                 "wotkit_harvest_module": ckanext.wotkit.actions.wotkit_harvest_module,
                 "wotkit_get_sensor_module_import": ckanext.wotkit.actions.wotkit_get_sensor_module_import,
-                "user_wotkit_credentials": ckanext.wotkit.actions.user_wotkit_credentials}
+                "user_wotkit_credentials": ckanext.wotkit.actions.user_wotkit_credentials,
+                "tag_counts": ckanext.wotkit.actions.tag_counts}
 
     def get_auth_functions(self):
         """Configure ckan authorization check functions for actions in this extension."""
