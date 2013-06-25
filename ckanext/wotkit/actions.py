@@ -17,7 +17,7 @@ import wotkit_proxy
 from model import WotkitUser
 
 from ckan.plugins import toolkit
-
+import json
 import ckan.lib.search as search
 
 log = getLogger(__name__)
@@ -58,6 +58,7 @@ def ckanAuthorization(context, data_dict):
 
 @logic.side_effect_free
 def tag_counts(context, data_dict):
+    """Get the most popular tag counts. (Not all tags)"""
     from ckan.lib.search.common import make_connection, SearchError, SearchQueryError
 
     query = {
@@ -68,22 +69,22 @@ def tag_counts(context, data_dict):
         'facet': 'true',
         'facet.field': 'tags'}
         
-    query = search.query_for(model.Package)
-    conn = make_connection()
+    
 
     try:
+        conn = make_connection()
+        solr_response = conn.raw_query(**query)
         data = json.loads(solr_response)
         
         results = []
-        solr_tags = data["response"]["facet_counts"]["facet_fields"]["tags"] 
-        for count, tags in solr_tags[::2]:
-            if count % 2 == 0:
-                # for every other tag:
-                results.append()
-                
-        
+        solr_tags = data["facet_counts"]["facet_fields"]["tags"]
+        for index in range(0,len(solr_tags),2):
+            results.append([solr_tags[index], solr_tags[index+1]])
+
     except Exception as e:
-        pass
+        raise SearchError("Failed to obtain and parse tag counts. " + str(e))
+    
+    return results
 
 @logic.side_effect_free
 def user_show(context, data_dict):

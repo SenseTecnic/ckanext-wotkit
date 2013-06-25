@@ -73,7 +73,6 @@ def checkSensorExist():
         log.warning(str(e))
         log.warning("Failed to register sensor %s. " % SENSOR_NAME)
 
-
 def updateWotkit():
     checkSensorExist()
     import pprint
@@ -130,7 +129,7 @@ def updateWotkit():
     if any(errors.values()):
         log.warning("Errors in retrieving london instant bus data: " + str(errors))
     
-    try:    
+    try:
         sensetecnic.sendBulkData(SENSOR_NAME, None, None, combined_data)
     except:
         log.error("Failed to send bulk data to wotkit for london bus instant. " + traceback.format_exc())    
