@@ -15,7 +15,7 @@ from ckan.plugins import IConfigurer
 from ckan.plugins import ITemplateHelpers
 
 import ckanext.wotkit.actions
-import ckanext.wotkit.wotkit_proxy
+
 log = getLogger(__name__)
 
 import pprint
@@ -59,15 +59,12 @@ class WotkitPlugin(SingletonPlugin):
         # Check config file for wotkit related configs and set them
         config_globals.init(config)
 
-        import sensors.sensetecnic as sensetecnic
         # Somewhat redundant for now.. initializing in both places
         # TODO: fix this ..
-        sensetecnic.init(config.get("wotkit.wotkit_url"), config.get("wotkit.api_url"), config.get("wotkit.processor_url"), config.get("wotkit.admin_id"), config.get("wotkit.admin_key"))                
-        ckanext.wotkit.wotkit_proxy.initWotkitUrls(config.get("wotkit.wotkit_url"), config.get("wotkit.api_url"), config.get("wotkit.processor_url"), config.get("wotkit.admin_id"), config.get("wotkit.admin_key"))
         
-        from model import WotkitUser
-        log.debug("Initializing wotkit db")
-        WotkitUser.initDB()
+        #from model import WotkitUser
+        #log.debug("Initializing wotkit db")
+        #WotkitUser.initDB()
         
     def get_actions(self):
         """Configure ckan action string -> function mapping for this extension"""
@@ -75,10 +72,8 @@ class WotkitPlugin(SingletonPlugin):
         return {"user_update": ckanext.wotkit.actions.user_update,
                 "user_create": ckanext.wotkit.actions.user_create,
                 "user_show": ckanext.wotkit.actions.user_show,
-                "wotkit": ckanext.wotkit.actions.wotkit,
                 "wotkit_harvest_module": ckanext.wotkit.actions.wotkit_harvest_module,
                 "wotkit_get_sensor_module_import": ckanext.wotkit.actions.wotkit_get_sensor_module_import,
-                "user_wotkit_credentials": ckanext.wotkit.actions.user_wotkit_credentials,
                 "tag_counts": ckanext.wotkit.actions.tag_counts}
 
     def get_auth_functions(self):

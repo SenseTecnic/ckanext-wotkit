@@ -39,7 +39,7 @@ from ckan.lib.jsonp import jsonpify
 import json
 
 from pytz import common_timezones
-import wotkit_proxy
+
 from repoze.who.plugins.auth_tkt import AuthTktCookiePlugin
 import config_globals
 import routes

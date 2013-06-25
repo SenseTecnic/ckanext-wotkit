@@ -201,7 +201,7 @@ def updateWotkit():
         log.warning("Errors in parsing: " + str(errors))
         
     try:
-        sensetecnic.sendBulkData(SENSOR_NAME, None, None, existing_data.values())
+        sensetecnic.sendBulkData(SENSOR_NAME, existing_data.values())
     except Exception as e:
         log.error("Failed to update wotkit sensor data for %s" % SENSOR_NAME)
         

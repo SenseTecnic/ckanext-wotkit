@@ -124,13 +124,13 @@ def updateWotkit():
             except Exception as e:
                 errors["other"].append(traceback.format_exc())
     except Exception as e:
-        log.warning("Error in retrieving data from london instant bus api")
+        log.warning("Error in retrieving data from london instant bus api: " + traceback.format_exc())
     
     if any(errors.values()):
         log.warning("Errors in retrieving london instant bus data: " + str(errors))
     
     try:
-        sensetecnic.sendBulkData(SENSOR_NAME, None, None, combined_data)
+        sensetecnic.sendBulkData(SENSOR_NAME, combined_data)
     except:
         log.error("Failed to send bulk data to wotkit for london bus instant. " + traceback.format_exc())    
         #r = requests.get(DATA_GET_URI, timeout=0.4, stream=True)

@@ -13,7 +13,7 @@ import ckan.logic as logic
 
 import ckan.lib.dictization.model_dictize as model_dictize
 import ckan.lib.dictization 
-import wotkit_proxy
+
 from model import WotkitUser
 
 from ckan.plugins import toolkit
@@ -27,6 +27,7 @@ _check_access = logic.check_access
 
 import importlib
 from pylons import config
+import config_globals
 
 """
 Functions in here are mostly accessible via ckan's action API:
@@ -68,8 +69,6 @@ def tag_counts(context, data_dict):
         'fq': 'site_id:"%s"' % config.get('ckan.site_id'),
         'facet': 'true',
         'facet.field': 'tags'}
-        
-    
 
     try:
         conn = make_connection()
@@ -94,7 +93,8 @@ def user_show(context, data_dict):
     
     # only check wotkit account if we need to
     if data_dict.get("link_wotkit", False):
-        wotkit_account = wotkit_proxy.getWotkitAccount(data_dict["id"])
+        wotkit_proxy = config_globals.get_wotkit_proxy()
+        wotkit_account = wotkit_proxy.get_wotkit_user(data_dict["id"])
         if not wotkit_account:
             raise logic.NotAuthorized("Failed to query wotkit account for user: %s" % data_dict["id"])
         user_dict["timezone"] = wotkit_account["timeZone"]
@@ -117,7 +117,8 @@ def user_create(context, data_dict):
     session = context['session']
     user_model = context["user_obj"]
         
-    if wotkit_proxy.getWotkitAccount(user_model.name):
+    wotkit_proxy = config_globals.get_wotkit_proxy()
+    if wotkit_proxy.get_wotkit_user(user_model.name):
         session.rollback()
         raise logic.ValidationError({"User already exists in wotkit": " "})
     
@@ -130,9 +131,9 @@ def user_create(context, data_dict):
             "timeZone": data_dict["timezone"]}
     
     try:
-        wotkit_proxy.createWotkitAccount(data)
+        wotkit_proxy.create_wotkit_user(data)
         log.debug("Success creating wotkit account")
-    except logic.NotAuthorized as e:
+    except Exception as e:
         log.debug("Failed creating wotkit account")
         session.rollback()
         raise logic.ValidationError({"Failed user creation in wotkit": " "})
@@ -162,7 +163,8 @@ def user_update(context, data_dict):
     if user_model is None:
         raise logic.ValidationError({'User was not found in ckan model.': " "})
     
-    wotkit_account = wotkit_proxy.getWotkitAccount(user_model.name)
+    wotkit_proxy = config_globals.get_wotkit_proxy()
+    wotkit_account = wotkit_proxy.get_wotkit_user(user_model.name)
     if not wotkit_account:
         raise logic.ValidationError({'User was not found in the Wotkit, make sure username %s exists in Wotkit' % user_model.name: " "})
     
@@ -192,7 +194,7 @@ def user_update(context, data_dict):
             wotkit_update_data["password"] = data_dict["password"]
     
         # need to update by id, not by name here
-        wotkit_proxy.updateWotkitAccount(str(wotkit_account["id"]), wotkit_update_data)
+        wotkit_proxy.update_wotkit_user(str(wotkit_account["id"]), wotkit_update_data)
         
     except Exception as e:
         session.rollback()
@@ -203,7 +205,7 @@ def user_update(context, data_dict):
         
     context["defer_commit"] = prev_defer_commit
     return updated_user
-    
+'''
 @logic.side_effect_free
 def user_wotkit_credentials(context, data_dict):
     """Return dictionary of wotkit credentials of current user.
@@ -261,6 +263,7 @@ def wotkit(context, data_dict):
         
     returnJson = {"Response": result}
     return returnJson
+'''
 
 def wotkit_harvest_module(context, data_dict):
     """ Harvests sensor data and pushes it into wotkit and creates a package in ckan.
@@ -285,6 +288,8 @@ def wotkit_harvest_module(context, data_dict):
     }
 
     # Somewhat redundant step that attempts to fetch all sensor data from wotkit that was just pushed
+    # TODO: Removed this due to problems with revision history lagging
+    '''
     import sensors.sensetecnic as sensetecnic
     wotkit_api_url = sensetecnic.getWotkitApiUrl()
     wotkit_url = sensetecnic.getWotkitUrl()
@@ -309,6 +314,7 @@ def wotkit_harvest_module(context, data_dict):
                                           })
     
     return package_dict
+    '''
 
 
 def wotkit_get_sensor_module_import(context, data_dict):

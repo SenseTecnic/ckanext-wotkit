@@ -39,7 +39,7 @@ def updateWotkit():
     combined_data = highways_agency_common.retrieveCommonEventFormat(DATA_GET_URI)
     
     try:
-        sensetecnic.sendBulkData(SENSOR_NAME, None, None, combined_data)
+        sensetecnic.sendBulkData(SENSOR_NAME, combined_data)
     except Exception as e:
         log.debug("Failed to update wotkit sensor data")
     
