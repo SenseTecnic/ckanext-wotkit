@@ -17,4 +17,4 @@ def getWotkitTimeStamp():
 def sendBulkData(sensor_name, data):
     proxies = config_globals.get_wotkit_proxies()
     for proxy in proxies:
-        proxy.send_bulk_data_put(sensor_name, data)
+        proxy.send_bulk_data_put_by_name(sensor_name, data)

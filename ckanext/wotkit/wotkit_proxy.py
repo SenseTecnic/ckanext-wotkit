@@ -91,6 +91,10 @@ class WotkitProxy():
         else:
             raise WotkitException("Error in getting sensor %s, code: " % sensor_id + str(req.status_code))
 
+    def send_data_post_by_name(self, sensor_name, params):
+        user, password = self.config.get_login_credentials()
+        return send_data_post(user + "." + sensor_name, params)
+
     def send_data_post(self, sensor_id, params):
         #use SenseTecnic
         #log.info("Sending data to wotkit for sensor " + sensor + ": " + str(attributes))
@@ -105,6 +109,10 @@ class WotkitProxy():
         else:
             raise WotkitException("Not successful in sending POST data to sensor: error code " + str(response.status_code))            
 
+    def send_bulk_data_put_by_name(self, sensor_name, data):
+        user, password = self.config.get_login_credentials()
+        self.send_bulk_data_put(user + "." + sensor_name, data)
+        
 
     def send_bulk_data_put(self, sensor_id, data):
         sensor_id = str(sensor_id)
