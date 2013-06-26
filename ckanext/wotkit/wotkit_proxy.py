@@ -107,7 +107,7 @@ class WotkitProxy():
             log.debug("Success sending POST sensor data to url: " + url)
             return True
         else:
-            raise WotkitException("Not successful in sending POST sensor data to url %s: error code " % url + str(response.status_code))            
+            raise WotkitException("Not successful in sending POST sensor data to url %s: error code " % url + str(response.status_code) + ", message: " + response.text)            
 
     def send_bulk_data_put_by_name(self, sensor_name, data):
         user, password = self.config.get_login_credentials()
@@ -126,7 +126,7 @@ class WotkitProxy():
             log.debug("Success sending bulk PUT data to sensor url: " + url)
             return True
         else:
-            raise WotkitException("Not successful in sending bulk PUT data to sensor url %s: error code " % url + str(response.status_code))
+            raise WotkitException("Not successful in sending bulk PUT data to sensor url %s: error code " % url + str(response.status_code) + ", error: " + response.text)
 
 
     def search_all_sensors(self):
