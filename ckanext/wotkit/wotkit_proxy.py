@@ -89,7 +89,7 @@ class WotkitProxy():
             log.debug("Sensor doesn't exist " + sensor_id)
             return None      
         else:
-            raise WotkitException("Error in getting sensor %s, code: " % sensor_id + str(req.status_code))
+            raise WotkitException("Error in getting sensor url %s, code: " % url + str(req.status_code))
 
     def send_data_post_by_name(self, sensor_name, params):
         user, password = self.config.get_login_credentials()
@@ -104,10 +104,10 @@ class WotkitProxy():
     
         response = requests.post(url = url, auth=(user, password), data = params)
         if response.status_code == 201:
-            log.debug("Success sending POST data to sensor: " + sensor_id)
+            log.debug("Success sending POST sensor data to url: " + url)
             return True
         else:
-            raise WotkitException("Not successful in sending POST data to sensor: error code " + str(response.status_code))            
+            raise WotkitException("Not successful in sending POST sensor data to url %s: error code " % url + str(response.status_code))            
 
     def send_bulk_data_put_by_name(self, sensor_name, data):
         user, password = self.config.get_login_credentials()
@@ -123,10 +123,10 @@ class WotkitProxy():
 
         response = requests.put(url = url, auth=(user, password), data = json_data, headers = {"content-type": "application/json"})
         if response.status_code == 204:
-            log.debug("Success sending bulk PUT data to sensor: " + sensor_id)
+            log.debug("Success sending bulk PUT data to sensor url: " + url)
             return True
         else:
-            raise WotkitException("Not successful in sending bulk PUT data to sensor: error code " + str(response.status_code))
+            raise WotkitException("Not successful in sending bulk PUT data to sensor url %s: error code " % url + str(response.status_code))
 
 
     def search_all_sensors(self):
@@ -161,7 +161,7 @@ class WotkitProxy():
         response = requests.put(url = url, auth=(user, password), data = json_data, headers = headers)
         
         if response.ok:
-            log.debug("Success updating sensor schema for " + sensor_id)
+            log.debug("Success updating sensor schema for url " + url)
             return True
         else:
             raise WotkitException("Error while registering/updating sensor %s to url: %s  " % (sensor_id, url))
@@ -174,7 +174,7 @@ class WotkitProxy():
         response = requests.post(url = url, auth=(user, password), data = json_data, headers = headers)
 
         if response.ok:
-            log.debug("Success registering sensor for " + str(sensor_data["name"]))
+            log.debug("Success registering sensor for url " + url + " sensor: " + str(sensor_data["name"]))
             return True
         else:
             raise WotkitException("Error while registering sensor %s to url: %s  " % (str(sensor_data["name"]), url))
