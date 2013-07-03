@@ -189,7 +189,7 @@ def updateWotkit():
             
         existing_data[source_id] = wotkit_data
     
-    for wotkit_data in existing_data:
+    for wotkit_data in existing_data.values():
         for schema in getSensorSchema():
             if schema["type"] == "NUMBER" and schema["name"] in wotkit_data and wotkit_data[schema["name"]]:
                 try:
