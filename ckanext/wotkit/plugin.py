@@ -7,12 +7,15 @@ from genshi.filters.transform import Transformer
 
 from ckan.plugins import implements, SingletonPlugin, toolkit
 
-from ckan.plugins import IRoutes
-from ckan.plugins import IActions
-from ckan.plugins import IAuthFunctions
-from ckan.plugins import IConfigurable
-from ckan.plugins import IConfigurer
-from ckan.plugins import ITemplateHelpers
+from ckan.plugins import (
+                          IRoutes,
+                          IActions,
+                          IAuthFunctions,
+                          IConfigurable,
+                          IConfigurer,
+                          ITemplateHelpers,
+                          IMiddleware
+                          )
 
 import ckanext.wotkit.actions
 
@@ -21,6 +24,7 @@ log = getLogger(__name__)
 import pprint
 
 import config_globals
+from billing_log_middleware import BillingLogMiddleware
 
 from routes.mapper import SubMapper
 
@@ -34,6 +38,12 @@ class WotkitPlugin(SingletonPlugin):
     implements(IRoutes, inherit=True)
     implements(IActions, inherit=True)
     implements(IAuthFunctions, inherit=True)
+    implements(IMiddleware, inherit=True)
+    
+    def make_middleware(self, app, config):
+        app = BillingLogMiddleware(app, config)
+        return app
+        
     
     # Additional template helper functions this plugin provides
     def get_helpers(self):
@@ -74,7 +84,8 @@ class WotkitPlugin(SingletonPlugin):
                 "user_show": ckanext.wotkit.actions.user_show,
                 "wotkit_harvest_module": ckanext.wotkit.actions.wotkit_harvest_module,
                 "wotkit_get_sensor_module_import": ckanext.wotkit.actions.wotkit_get_sensor_module_import,
-                "tag_counts": ckanext.wotkit.actions.tag_counts}
+                "tag_counts": ckanext.wotkit.actions.tag_counts,
+                "user_get": ckanext.wotkit.actions.user_get}
 
     def get_auth_functions(self):
         """Configure ckan authorization check functions for actions in this extension."""

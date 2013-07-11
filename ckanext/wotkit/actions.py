@@ -205,6 +205,18 @@ def user_update(context, data_dict):
         
     context["defer_commit"] = prev_defer_commit
     return updated_user
+
+@logic.side_effect_free
+def user_get(context, data_dict):
+    """Returns the username of the currently logged in user"""
+    user_name = context.get("user")
+    
+    if not user_name:
+        raise logic.NotFound
+    
+    return {"username": user_name}    
+
+    
 '''
 @logic.side_effect_free
 def user_wotkit_credentials(context, data_dict):

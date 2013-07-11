@@ -24,12 +24,15 @@ logout_success_url = None
 wotkit_admin_id = None
 wotkit_admin_key = None
 
+billing_directory = None
+
 def init(config):
     """
     Initializes global URL's used. Input config is supplied from plugin.py and is read from the configuration .ini file
     """
     global wotkit_url, wotkit_api_url, ckan_url, smarstreets_base_url, smartstreets_about_url, logout_success_url
     global wotkit_admin_id, wotkit_admin_key
+    global billing_directory
     
     wotkit_url = get_required_config(config, "wotkit.wotkit_url")
     wotkit_api_url = get_required_config(config, "wotkit.api_url")
@@ -42,6 +45,7 @@ def init(config):
     wotkit_admin_id = get_required_config(config, "wotkit.admin_id")
     wotkit_admin_key = get_required_config(config, "wotkit.admin_key")  
 
+    billing_directory = get_required_config(config, "billing.directory")
     
     global wotkit_proxies    
     wotkit_proxy_config = wotkit_proxy.WotkitConfig(wotkit_url, wotkit_api_url, "", wotkit_admin_id, wotkit_admin_key)
@@ -92,3 +96,6 @@ def get_required_config(config, name):
     if not value:
         raise Exception("No %s in configuration .ini file" % name)
     return value
+
+def get_billing_directory():
+    return billing_directory
