@@ -6,7 +6,7 @@
   <fieldset>
     <legend>{{ _('Change your details') }}</legend>
 
-    {{ form.input('name', label=_('Username'), id='field-username', value=data.name, error=errors.name, classes=['control-medium']) }}
+    {{ form.input('name', label=_('Username'), id='field-username', value=data.name, error=errors.name, classes=['control-medium'], attrs={'readonly': 'True'}) }}
 
     {{ form.input('fullname', label=_('Full name'), id='field-fullname', value=data.fullname, error=errors.fullname, placeholder=_('eg. Joe Bloggs'), classes=['control-medium']) }}
 
