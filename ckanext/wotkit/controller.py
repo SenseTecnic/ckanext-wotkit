@@ -72,7 +72,7 @@ class WotkitUserController(UserController):
 
             h.flash_success(_("%s is now logged in") %
                             user_dict['display_name'])
-            if came_from and came_from != "/user/logged_in":
+            if came_from and "logged_in" not in came_from:
                 # HACK redirect to ignore the base URL /data
                 return routes.redirect_to(str(came_from))
             return self.me()
