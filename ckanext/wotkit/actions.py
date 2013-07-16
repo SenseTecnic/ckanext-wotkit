@@ -12,6 +12,7 @@ from logging import getLogger
 import ckan.logic as logic
 
 import ckan.lib.dictization.model_dictize as model_dictize
+import ckan.lib.dictization.model_save as model_save
 import ckan.lib.dictization 
 
 from model import WotkitUser
@@ -29,6 +30,13 @@ import importlib
 from pylons import config
 import config_globals
 
+import ckan.lib.navl.dictization_functions
+
+_validate = ckan.lib.navl.dictization_functions.validate
+ValidationError = logic.ValidationError
+NotFound = logic.NotFound
+
+    
 """
 Functions in here are mostly accessible via ckan's action API:
 By convention, whenever ckan needs to update the model, it goes through an action of the form:
@@ -112,21 +120,31 @@ def user_create(context, data_dict):
     prev_defer_commit = context.get("defer_commit")
     context["defer_commit"] = True
     
-    # Call parent method, this should handle authorization and rollback on error    
-    user_dict = logic.action.create.user_create(context, data_dict)
     session = context['session']
-    user_model = context["user_obj"]
-        
+    # Call parent method, this should handle authorization and rollback on error    
+    model = context['model']
+    schema = context.get('schema') or ckan.logic.schema.default_user_schema()
+
+    _check_access('user_create', context, data_dict)
+
+    data, errors = _validate(data_dict, schema, context)
+
+    if errors:
+        session.rollback()
+        raise ValidationError(errors)
+
+    user = model_save.user_dict_save(data, context)
+    
     wotkit_proxy = config_globals.get_wotkit_proxy()
-    if wotkit_proxy.get_wotkit_user(user_model.name):
+    if wotkit_proxy.get_wotkit_user(user.name):
         session.rollback()
         raise logic.ValidationError({"User already exists in wotkit": " "})
     
-    
-    data = {"username": user_model.name,
-            "password": user_model.password1,
-            "email": user_model.email,
-            "firstname": user_model.fullname,
+ 
+    data = {"username": user.name,
+            "password": user.password1,
+            "email": user.email,
+            "firstname": user.fullname,
             "lastname": " ",
             "timeZone": data_dict["timezone"]}
     
@@ -137,6 +155,43 @@ def user_create(context, data_dict):
         log.debug("Failed creating wotkit account")
         session.rollback()
         raise logic.ValidationError({"Failed user creation in wotkit": " "})
+    
+    # Flush the session to cause user.id to be initialised, because
+    # activity_create() (below) needs it.
+    session.flush()
+
+    activity_create_context = {
+        'model': model,
+        'user': context['user'],
+        'defer_commit': True,
+        'session': session
+    }
+    activity_dict = {
+            'user_id': user.id,
+            'object_id': user.id,
+            'activity_type': 'new user',
+            }
+    logic.get_action('activity_create')(activity_create_context,
+            activity_dict, ignore_auth=True)
+
+    if not context.get('defer_commit'):
+        model.repo.commit()
+
+    # A new context is required for dictizing the newly constructed user in
+    # order that all the new user's data is returned, in particular, the
+    # api_key.
+    #
+    # The context is copied so as not to clobber the caller's context dict.
+    user_dictize_context = context.copy()
+    user_dictize_context['keep_sensitive_data'] = True
+    user_dict = model_dictize.user_dictize(user, user_dictize_context)
+
+    context['user_obj'] = user
+    context['id'] = user.id
+
+    model.Dashboard.get(user.id) #  Create dashboard for user.
+
+    log.debug('Created user {name}'.format(name=user.name))
     
 
     #wotkit_create_dict = {"ckan_id": user_model.id, 

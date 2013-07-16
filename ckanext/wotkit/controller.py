@@ -59,14 +59,8 @@ class WotkitUserController(UserController):
     """
     #new_user_form = 'user/register.html'
     def logged_in(self):
-        # we need to set the language via a redirect
-        lang = session.pop('lang', None)
-        session.save()
         came_from = request.params.get('came_from', '')
-        #log.warning("came from: " + str(came_from))
-        # we need to set the language explicitly here or the flash
-        # messages will not be translated.
-        i18n.set_lang(lang)
+
 
         if c.user:
             context = None
@@ -78,7 +72,7 @@ class WotkitUserController(UserController):
 
             h.flash_success(_("%s is now logged in") %
                             user_dict['display_name'])
-            if came_from:
+            if came_from and came_from != "/user/logged_in":
                 # HACK redirect to ignore the base URL /data
                 return routes.redirect_to(str(came_from))
             return self.me()
