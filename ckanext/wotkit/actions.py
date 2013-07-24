@@ -253,7 +253,7 @@ def user_update(context, data_dict):
         
     except Exception as e:
         session.rollback()
-        raise e
+        raise logic.ValidationError({"Error in user update: " + str(e): " "})
     
     if not prev_defer_commit:
         model.repo.commit()
