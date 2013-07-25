@@ -1,5 +1,5 @@
 import ckanext.wotkit.wotkit_proxy as wotkit_proxy
-
+import urlparse
 '''
 
 This file contains all configuration globals used in ckan-wotkit hub.
@@ -70,25 +70,35 @@ def get_wotkit_proxies():
 def get_wotkit_admin_credentials():
     return (wotkit_admin_id, wotkit_admin_key)
     
+# The URL functions below are  meant to be used from HTML templates as template helpers
+# template helpers are configured in plugins.py. Strip domain to handle both http and https
+
 def get_wotkit_url():
-    return wotkit_url
+    return strip_domain_url(wotkit_url)
     
 def get_wotkit_api_url():
-    return wotkit_api_url
+    return strip_domain_url(wotkit_api_url)
 
 def get_logout_success_url():
-    return logout_success_url
+    return strip_domain_url(logout_success_url)
 
+def strip_domain_url(url):
+    split_url = urlparse.urlsplit(url)
+    stripped_url = split_url.path
+    if split_url.query:
+        stripped_url += "?" + split_url.query
+    return stripped_url
+    
 def get_logout_all_url():
     """ Logout URL that triggers the redirects done to logout of all wotkit, ckan sites. """
-    wotkit_logout_url = wotkit_url + "/logout/bridge"
-    return ckan_url + "/user/_logout?came_from=" + wotkit_logout_url + "," + logout_success_url
+    wotkit_logout_url = get_wotkit_url() + "/logout/bridge"
+    return strip_domain_url(ckan_url) + "/user/_logout?came_from=" + wotkit_logout_url + "," + get_logout_success_url()
     
 def get_smartstreets_base_url():
-    return smarstreets_base_url
+    return strip_domain_url(smarstreets_base_url)
     
 def get_smartstreets_about_url():
-    return smartstreets_about_url
+    return strip_domain_url(smartstreets_about_url)
 
 def get_required_config(config, name):
     """ Extract name from config, and throws if it doesn't exist """
