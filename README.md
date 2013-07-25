@@ -16,3 +16,7 @@ To install this package, from your CKAN virtualenv, run the following from your 
 Then activate it by setting ``ckan.plugins = wotkit`` in your main ``ini``-file.
 
 
+Changelog
+===========================
+Release 1.2:
+* Billing logs implemented. The log directory is configured in the .ini file.
