@@ -83,7 +83,8 @@ def get_wotkit_api_url():
     return strip_domain_url(wotkit_api_url)
 
 def get_logout_success_url():
-    return routes.url_for(strip_domain_url(logout_success_url), qualified=True)
+    full_url = routes.url_for(strip_domain_url(logout_success_url), qualified=True)
+    return full_url.replace("/data/data", "/data")
 
 def strip_domain_url(url):
     split_url = urlparse.urlsplit(url)
