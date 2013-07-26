@@ -77,10 +77,10 @@ def get_wotkit_admin_credentials():
 # when we want to redirect to wotkit this is problematic
 
 def get_wotkit_url(): 
-    return strip_domain_url(wotkit_url)
+    return routes.url_for(strip_domain_url(wotkit_url), qualified=True).replace("/data", "")
     
 def get_wotkit_api_url():
-    return strip_domain_url(wotkit_api_url)
+    return routes.url_for(strip_domain_url(wotkit_api_url), qualified=True).replace("/data", "")
 
 def get_logout_success_url():
     full_url = routes.url_for(strip_domain_url(logout_success_url), qualified=True)
@@ -99,10 +99,10 @@ def get_logout_all_url():
     return strip_domain_url(ckan_url) + "/user/_logout?came_from=" + wotkit_logout_url + "," + get_logout_success_url()
     
 def get_smartstreets_base_url():
-    return strip_domain_url(smarstreets_base_url)
+    return routes.url_for(strip_domain_url(smarstreets_base_url), qualified=True).replace("/data", "")
     
 def get_smartstreets_about_url():
-    return strip_domain_url(smartstreets_about_url)
+    return routes.url_for(strip_domain_url(smartstreets_about_url), qualified=True).replace("/data", "")
 
 def get_required_config(config, name):
     """ Extract name from config, and throws if it doesn't exist """
