@@ -1,5 +1,6 @@
 import ckanext.wotkit.wotkit_proxy as wotkit_proxy
 import urlparse
+import routes
 '''
 
 This file contains all configuration globals used in ckan-wotkit hub.
@@ -71,16 +72,18 @@ def get_wotkit_admin_credentials():
     return (wotkit_admin_id, wotkit_admin_key)
     
 # The URL functions below are  meant to be used from HTML templates as template helpers
-# template helpers are configured in plugins.py. Strip domain to handle both http and https
+# template helpers are configured in plugins.py. very hacky to handle http and https dynamically.
+# The problem is ckan URL functionality such as url_for assumes the /data path and appends it automatically
+# when we want to redirect to wotkit this is problematic
 
-def get_wotkit_url():
+def get_wotkit_url(): 
     return strip_domain_url(wotkit_url)
     
 def get_wotkit_api_url():
     return strip_domain_url(wotkit_api_url)
 
 def get_logout_success_url():
-    return strip_domain_url(logout_success_url)
+    return routes.url_for(strip_domain_url(logout_success_url), qualified=True)
 
 def strip_domain_url(url):
     split_url = urlparse.urlsplit(url)
