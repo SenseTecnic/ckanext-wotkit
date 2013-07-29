@@ -11,7 +11,7 @@ logging.basicConfig()
 
 log = logging.getLogger(__name__)
 log_name = "ckan.log"
-log_format = "{time},{host},{url},{method},{status_code},{request_size},{response_size},{request_body},{response_body}\n"
+log_format = "{date_time},{host},{url},{method},{status_code},{request_size},{response_size},{request_body},{response_body}\n"
 
 body_size_limit = 1000
 
@@ -33,7 +33,7 @@ def log(host, user, url, method, status_code, request_size, response_size, reque
     other params are self explanatory
     """
     billing_log_directory = config_globals.get_billing_directory()
-    now_datetime = datetime.datetime.now()
+    now_datetime = datetime.datetime.utcnow()
 
     year = str(now_datetime.date().year)
     month = str(now_datetime.date().month)
@@ -49,8 +49,8 @@ def log(host, user, url, method, status_code, request_size, response_size, reque
     log_file_path = os.path.join(user_log_path, log_name)
     log_file = open(log_file_path, "a+")
     
-    time = str(now_datetime.time())
-    log_line = log_format.format(time=time, 
+    time = now_datetime.isoformat() + 'Z'
+    log_line = log_format.format(date_time=time, 
                                  host=host, 
                                  url=escape(url), 
                                  method=method, 
