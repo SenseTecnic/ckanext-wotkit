@@ -38,36 +38,32 @@ NotFound = logic.NotFound
 
     
 """
-Functions in here are mostly accessible via ckan's action API:
+Functions in here are accessible via ckan's action API:
+
+New Implemented functions include:
+tag_counts,
+user_get
+
+Overriden function include (unified login):
+user_show,
+user_create,
+user_update
+
+For guiness, an example could be http://guiness.magic.ubc.ca/data/api/action/tag_counts
+tag_counts corresponds to the action defined in this file.
+
 By convention, whenever ckan needs to update the model, it goes through an action of the form:
 result = logic.get_action("FUNCTION_NAME")(context, data_dict)
 
-So rather than modifying the model directly, create new actions that wrap it in here, and hook it up via plugin.py
+So rather than modifying the model directly, create new actions that wrap it in here, and hook it up via get_actions() in plugin.py.
 
 Perhaps clean up this file and separate authorization and also get, update, create, delete actions for maintainability 
 """
 
-def ckanAuthorization(context, data_dict):
-    """The authorization function linked with wotkit action api calls. 
-    For now it checks ckan and wotkit credentials.
-    """
-    
-    #Simply check if user is logged in, and also has a wotkit account mapping
-    user = context['user']      
-    
-    if user:
-        return {'success': True}
-    else:    
-        return {'success': False, 'msg': _('Not authorized')}
-    
-    #authorized_user = model.User.get(context.get('user'))
-
-    # Any user is authorized to see what she herself is following.
-    #requested_user = model.User.get(data_dict.get('id'))
 
 @logic.side_effect_free
 def tag_counts(context, data_dict):
-    """Get the most popular tag counts. (Not all tags)"""
+    """Get the most popular tag counts (Not all tags). This is a much faster implementation that the current ckan tag counts by directly going into Solr and doing a facet search on tags """
     from ckan.lib.search.common import make_connection, SearchError, SearchQueryError
 
     query = {
@@ -94,8 +90,19 @@ def tag_counts(context, data_dict):
     return results
 
 @logic.side_effect_free
+def user_get(context, data_dict):
+    """Returns the username of the currently logged in user. If not found, raise a not found error. 
+    The intended use of this function is to be called by the wotkit with the auth_tkt cookie set. If it is a valid auth_tkt cookie this call returns the username"""
+    user_name = context.get("user")
+    
+    if not user_name:
+        raise logic.NotFound
+    
+    return {"username": user_name}    
+
+@logic.side_effect_free
 def user_show(context, data_dict):
-    """Override default user_show action to also include wotkit credentials"""
+    """Override default user_show action to also include wotkit credentials for unified login."""
     # Call default user_show, which handles authorization
     user_dict = logic.action.get.user_show(context, data_dict)
     
@@ -114,7 +121,7 @@ def user_show(context, data_dict):
     return user_dict
 
 def user_create(context, data_dict):
-    """Override default user_create action to also include wotkit credentials"""
+    """Override default user_create action to also include wotkit credentials for unified login."""
     
     # Temporarily defer commits so we can reuse code and rollback if wotkit problems
     prev_defer_commit = context.get("defer_commit")
@@ -207,7 +214,7 @@ def user_create(context, data_dict):
     
     
 def user_update(context, data_dict):
-    """Override default user_update action to also include wotkit credentials"""
+    """Override default user_update action to also include wotkit credentials for unified login."""
 
     #Get current user ID
     id = _get_or_bust(data_dict, 'id')
@@ -261,107 +268,3 @@ def user_update(context, data_dict):
     context["defer_commit"] = prev_defer_commit
     return updated_user
 
-@logic.side_effect_free
-def user_get(context, data_dict):
-    """Returns the username of the currently logged in user"""
-    user_name = context.get("user")
-    
-    if not user_name:
-        raise logic.NotFound
-    
-    return {"username": user_name}    
-
-    
-'''
-@logic.side_effect_free
-def user_wotkit_credentials(context, data_dict):
-    """Return dictionary of wotkit credentials of current user.
-    :rtype: dictionary
-    """
-    _check_access("user_wotkit_credentials", context, data_dict)
-    user = context['user']
-    user_model = model.User.get(user)
-    result = WotkitUser.get(user_model.id)
-    
-    if result:
-        return_dict = {"id": result.id, "wotkit_id": result.wotkit_id, "wotkit_password": result.wotkit_password}
-    else:
-        return_dict = {};
-    return return_dict
-
-def _getWotkitCredentials(context, data_dict):
-    """ Handles extraction of wotkit credentials """
-    #get username for logged in user
-    user = context['user']
-
-    wotkit_credentials = {}
-    if all(key in data_dict for key in ("wotkit_id", "wotkit_password")):
-        wotkit_credentials["wotkit_id"] = data_dict["wotkit_id"]
-        wotkit_credentials["wotkit_password"] = data_dict["wotkit_password"]
-        
-    if not wotkit_credentials and user:
-        wotkit_credentials = _get_action("user_wotkit_credentials")(context, data_dict)
-        if not wotkit_credentials or not wotkit_credentials["wotkit_id"] or not wotkit_credentials["wotkit_password"]:
-            raise logic.NotFound("Wotkit credentials not found for ckan user")
-    return wotkit_credentials
-
-@logic.side_effect_free
-def wotkit(context, data_dict):
-    """Proxy API to Wotkit
-    """
-    
-    _check_access("wotkit", context, data_dict)
-    
-    wotkit_credentials = _getWotkitCredentials(context, data_dict)
-    
-    sensor_name = data_dict.get("sensor", None)
-    if sensor_name:
-        result = wotkit_proxy.getSensor(wotkit_credentials["wotkit_id"], wotkit_credentials["wotkit_password"], sensor_name)
-    else:
-        
-        # this is api proxy with everything after the api path specified
-        url_path = _get_or_bust(data_dict, "url")
-        method = data_dict.get("method", None)
-        data = data_dict.get("data", None)
-        
-        if url_path:
-            result = wotkit_proxy.proxyParameters(wotkit_credentials["wotkit_id"], wotkit_credentials["wotkit_password"], url_path, method, data)
-                
-        
-    returnJson = {"Response": result}
-    return returnJson
-'''
-
-def wotkit_harvest_module(context, data_dict):
-    """ Harvests sensor data and pushes it into wotkit and creates a package in ckan.
-    The Harvesting mechanism searches for a module that matches the "module" field provided in data_dict in ./sensors/
-    The modules must have a method called "updateWotkit()" defined, which must return a list of sensor names that were updated
-    """
-
-    # Only the harvest user can load modules for now, module must be supplied in data_dict
-    module = _get_action("wotkit_get_sensor_module_import")(context, data_dict)
-    
-    # All wotkit modules defined with updateWotkit function (ducktyping)
-    # Must return list of sensor names that corresponds to {WOTKIT_API_URL}/sensors/{SENSOR_NAME_HERE} for wotkit api access
-    updated_sensors = []
-    try:
-        updated_sensors = module.updateWotkit()
-    except Exception as e:
-        log.error("Failed to get and update wotkit for module " + data_dict["module"] + ". " + e.message)
-        raise e
-    
-    package_dict = {
-                    'resources': []
-    }
-
-
-def wotkit_get_sensor_module_import(context, data_dict):
-    user = context["user"]
-    if not user == "harvest":
-        raise Exception("Only harvest user can call harvest modules")
-    
-    if not "module" in data_dict:
-        raise Exception("No module defined for harvesting wotkit sensor data.")
-    
-    module = importlib.import_module("ckanext.wotkit.sensors." + data_dict["module"], "ckanext")
-    return module

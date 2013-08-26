@@ -55,12 +55,13 @@ class HackedStorageAPIController(StorageAPIController):
 
 
 class WotkitUserController(UserController):
-    """Override default user controller to add Wotkit credentials
+    """Override default user controller to add Wotkit credentials. 
+    The methods in this class are mostly copy pasted from the original ckan UserController that we override.
+    
     """
     #new_user_form = 'user/register.html'
     def logged_in(self):
         came_from = request.params.get('came_from', '')
-
 
         if c.user:
             context = None
@@ -73,7 +74,10 @@ class WotkitUserController(UserController):
             h.flash_success(_("%s is now logged in") %
                             user_dict['display_name'])
             if came_from and "logged_in" not in came_from:
-                # HACK redirect to ignore the base URL /data
+                """Mark: HACK redirect to ignore the base URL /data. 
+                This used to use url_for, but doing so always appends the /data path which we won't want
+                Thus had to change it to redirect_to
+                """
                 return routes.redirect_to(str(came_from))
             return self.me()
         else:
@@ -96,7 +100,7 @@ class WotkitUserController(UserController):
         # save our language in the session so we don't lose it
         session['lang'] = request.environ.get('CKAN_LANG')
         
-        # Save in session HACK
+        # Mark: Save in session HACK because we redirect to logout and we loose the parameter
         came_from = request.params.get('came_from', '')
         session['logout_came_from'] = came_from
         session.save()
@@ -114,7 +118,7 @@ class WotkitUserController(UserController):
         c.user = None
         session.delete()
         if came_from:
-            # extract came_from
+            # extract came_from and construct new came from before redirecting
 
             (next_redirect_url, comma, remaining_came_from) = came_from.partition(',')
             if remaining_came_from:
@@ -129,6 +133,7 @@ class WotkitUserController(UserController):
             routes.redirect_to(str(url))
 
     def _add_wotkit_credentials_to_schema(self, schema):
+        """ Adds timezone to user schema for parameters to be validated on form submit"""
         schema['timezone'] = [ignore_missing, unicode]
 
     def _new_form_to_db_schema(self):
@@ -148,6 +153,7 @@ class WotkitUserController(UserController):
         return schema
 
     def edit(self, id=None, data=None, errors=None, error_summary=None):
+        """ Edit an existing user. """
         context = {'save': 'save' in request.params,
                    'schema': self._edit_form_to_db_schema(),
                    }

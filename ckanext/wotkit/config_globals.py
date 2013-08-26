@@ -1,6 +1,8 @@
 import ckanext.wotkit.wotkit_proxy as wotkit_proxy
 import urlparse
 import routes
+import wotkitpy
+
 '''
 
 This file contains all configuration globals used in ckan-wotkit hub.
@@ -12,7 +14,7 @@ init should be called on initialization
 '''
 
 # globals for now, access these through getter functions implemented in this file
-wotkit_proxies = []
+wotkit_proxy = None
 
 wotkit_url = None
 wotkit_api_url = None
@@ -48,33 +50,21 @@ def init(config):
 
     billing_directory = get_required_config(config, "billing.directory")
     
-    global wotkit_proxies    
-    wotkit_proxy_config = wotkit_proxy.WotkitConfig(wotkit_url, wotkit_api_url, "", wotkit_admin_id, wotkit_admin_key)
-    wotkit_proxies.append(wotkit_proxy.WotkitProxy(wotkit_proxy_config))
-    
-    # TODO: for now we run harvester on one machine, and copy the wotkit data to production 
-    wotkit_second_api_url = config.get("wotkit.api_url_copy")
-    # Assumes same username
-    if wotkit_second_api_url:
-        wotkit_proxy_config2 = wotkit_proxy.WotkitConfig("", wotkit_second_api_url, "", wotkit_admin_id, wotkit_admin_key)
-        wotkit_proxies.append(wotkit_proxy.WotkitProxy(wotkit_proxy_config2))
-                              
+    global wotkit_proxy    
+    wotkit_proxy = wotkitpy.WotkitProxy(**{"api_url": wotkit_api_url, "username": wotkit_admin_id, "password": wotkit_admin_key})
 
 def get_wotkit_proxy():
     """ get main proxy """
-    return wotkit_proxies[0]    
+    return wotkit_proxy 
 
-def get_wotkit_proxies():
-    """ get all proxies """
-    return wotkit_proxies
+""" The URL functions below are meant to be used from HTML templates as well as places where URL's are needed such as unified login.
+Template helpers are configured in plugins.py, and essentially links to these functions when used in HTML templates.
 
-def get_wotkit_admin_credentials():
-    return (wotkit_admin_id, wotkit_admin_key)
-    
-# The URL functions below are  meant to be used from HTML templates as template helpers
-# template helpers are configured in plugins.py. very hacky to handle http and https dynamically.
-# The problem is ckan URL functionality such as url_for assumes the /data path and appends it automatically
-# when we want to redirect to wotkit this is problematic
+The url's are changed dynamically to handle http and https automatically based on the accessed URL.
+
+The problem is ckan URL functionality such as url_for assumes the /data path and appends it automatically.
+When we want to redirect to wotkit this is problematic.
+"""
 
 def get_wotkit_url(): 
     return routes.url_for(strip_domain_url(wotkit_url), qualified=True).replace("/data", "")

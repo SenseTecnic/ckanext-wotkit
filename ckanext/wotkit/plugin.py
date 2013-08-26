@@ -10,7 +10,6 @@ from ckan.plugins import implements, SingletonPlugin, toolkit
 from ckan.plugins import (
                           IRoutes,
                           IActions,
-                          IAuthFunctions,
                           IConfigurable,
                           IConfigurer,
                           ITemplateHelpers,
@@ -37,10 +36,10 @@ class WotkitPlugin(SingletonPlugin):
     implements(IConfigurer, inherit=True)   
     implements(IRoutes, inherit=True)
     implements(IActions, inherit=True)
-    implements(IAuthFunctions, inherit=True)
     implements(IMiddleware, inherit=True)
     
     def make_middleware(self, app, config):
+        """IMiddleware extension. This essentially plugs in before the application starts (where we intercept request/response for billing)"""
         app = BillingLogMiddleware(app, config)
         return app
         
@@ -58,7 +57,7 @@ class WotkitPlugin(SingletonPlugin):
                 'smartstreets_about_url': config_globals.get_smartstreets_about_url}
     
     def update_config(self, config):
-        """Add template directory of this extension to override the default ckan templates"""
+        """Add template directory of this extension to override the default ckan templates with IConfigurer plugin."""
         #Probably have to add directories for css / jscript files later
         toolkit.add_template_directory(config, "theme/templates")
 
@@ -68,34 +67,19 @@ class WotkitPlugin(SingletonPlugin):
         
         # Check config file for wotkit related configs and set them
         config_globals.init(config)
-
-        # Somewhat redundant for now.. initializing in both places
-        # TODO: fix this ..
-        
-        #from model import WotkitUser
-        #log.debug("Initializing wotkit db")
-        #WotkitUser.initDB()
         
     def get_actions(self):
-        """Configure ckan action string -> function mapping for this extension"""
+        """Configure ckan action string -> function mapping for this extension with IActions plugin"""
         #log.debug("Initializing Wotkit Plugin Actions")
         return {"user_update": ckanext.wotkit.actions.user_update,
                 "user_create": ckanext.wotkit.actions.user_create,
                 "user_show": ckanext.wotkit.actions.user_show,
-                "wotkit_harvest_module": ckanext.wotkit.actions.wotkit_harvest_module,
-                "wotkit_get_sensor_module_import": ckanext.wotkit.actions.wotkit_get_sensor_module_import,
                 "tag_counts": ckanext.wotkit.actions.tag_counts,
                 "user_get": ckanext.wotkit.actions.user_get}
-
-    def get_auth_functions(self):
-        """Configure ckan authorization check functions for actions in this extension."""
-        log.debug("Initializing Wotkit Plugin Authorization Function")
-        return {"wotkit":ckanext.wotkit.actions.ckanAuthorization,
-                "user_wotkit_credentials":ckanext.wotkit.actions.ckanAuthorization}
     
     
     def before_map(self, map):
-        """This IRoutes implementation overrides the standard behavior of user information.
+        """This IRoutes implementation overrides the standard behavior of user information to make unified login work.
         Adds a WotkitUserController that overrides the default, that includes wotkit credentials
         """
         # Hook in our custom user controller at the points of creation
@@ -112,6 +96,7 @@ class WotkitPlugin(SingletonPlugin):
                     controller="ckanext.wotkit.controller:WotkitUserController", 
                     action='logged_out')
         
+        # The storage API controller was modified to make proper urls. In our case, we had issues when running under /data which appended urls to be /data/data so I had to change it.
         GET = dict(method=['GET'])
         with SubMapper(map, controller='ckanext.wotkit.controller:HackedStorageAPIController') as m:
             m.connect('storage_api_get_metadata', '/api/storage/metadata/{label:.*}',
