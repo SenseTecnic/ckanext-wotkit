@@ -66,6 +66,9 @@ The problem is ckan URL functionality such as url_for assumes the /data path and
 When we want to redirect to wotkit this is problematic.
 """
 
+def get_ckan_url():
+    return routes.url_for(strip_domain_url(ckan_url), qualified=True)
+
 def get_wotkit_url(): 
     return routes.url_for(strip_domain_url(wotkit_url), qualified=True).replace("/data", "")
     

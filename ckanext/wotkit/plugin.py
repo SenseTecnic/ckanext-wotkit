@@ -49,7 +49,8 @@ class WotkitPlugin(SingletonPlugin):
         """ From html templates, we can access these functions through h: 
         example: h.wotkit_url(), h.logout_all_url()
         """
-        return {'wotkit_url': config_globals.get_wotkit_url,
+        return {'ckan_url': config_globals.get_ckan_url,
+                'wotkit_url': config_globals.get_wotkit_url,
                 'wotkit_api_url': config_globals.get_wotkit_api_url,
                 'logout_all_url': config_globals.get_logout_all_url,
                 'logout_success_url:': config_globals.get_logout_success_url,
