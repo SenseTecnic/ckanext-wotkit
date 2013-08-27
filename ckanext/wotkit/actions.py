@@ -149,12 +149,14 @@ def user_create(context, data_dict):
             "timeZone": data_dict["timezone"]}
     
     try:
+        # custom validation
+        _validate_user_data(user)
         wotkit_proxy.create_wotkit_user(data)
         log.debug("Success creating wotkit account")
     except Exception as e:
         log.debug("Failed creating wotkit account")
         session.rollback()
-        raise logic.ValidationError({"Failed user creation in wotkit": " "})
+        raise logic.ValidationError({"Failed user creation in wotkit. Error: " + str(e): " "})
     
     # Flush the session to cause user.id to be initialised, because
     # activity_create() (below) needs it.
@@ -235,7 +237,7 @@ def user_update(context, data_dict):
     # This should be ok since the above database update will rollback if there is an error
     try:
         updated_user = logic.action.update.user_update(context, data_dict)
-                
+        _validate_user_data(updated_user)
         wotkit_update_data = {"email": updated_user["email"],
                               "firstname": updated_user["fullname"],
                               "lastname": " "}
@@ -365,3 +367,12 @@ def wotkit_get_sensor_module_import(context, data_dict):
     
     module = importlib.import_module("ckanext.wotkit.sensors." + data_dict["module"], "ckanext")
     return module
+
+def _validate_user_data(user):    
+    """Used for user update and create to check that required fields are set. Raises Exception if any fields are missing"""
+    if not user.fullname:
+        raise Exception("Fullname is required")
+    
+    if not user.email:
+        raise Exception("Email is required")
+
