@@ -102,7 +102,12 @@ def user_get(context, data_dict):
 
 @logic.side_effect_free
 def user_show(context, data_dict):
-    """Override default user_show action to also include wotkit credentials for unified login."""
+    """Override default user_show action to also include wotkit credentials for unified login.
+    Without any parameters supplied, the behavior is the same as ckan's user_show.
+    Only if link_wotkit = True in data_dict will the user also be retrieved from the wotkit. This parameter is only used from the WotkitUserController in this extension.
+        This function assumes that the accounts start in a clean state, ie (were created successfully to begin with on ckan and wotkit, and doesn't handle the case where the account only exists on one system).
+        If the user does not exist on the wotkit when link_wotkit is true, it raise a NotAuthorized.
+    """
     # Call default user_show, which handles authorization
     user_dict = logic.action.get.user_show(context, data_dict)
     
@@ -121,7 +126,11 @@ def user_show(context, data_dict):
     return user_dict
 
 def user_create(context, data_dict):
-    """Override default user_create action to also include wotkit credentials for unified login."""
+    """Override default user_create action to proxy the user create to the wotkit.
+    This function unfortunately copy pastes from the original user_create function to add rollback if user creation fails on the wotkit.
+    First check if user exists on wotkit (raise validation error if they do)
+    Then it saves to ckan user table, then attempts to save to wotkit. If they both are successful the change is saved to ckan user table.
+    """
     
     # Temporarily defer commits so we can reuse code and rollback if wotkit problems
     prev_defer_commit = context.get("defer_commit")
@@ -214,7 +223,10 @@ def user_create(context, data_dict):
     
     
 def user_update(context, data_dict):
-    """Override default user_update action to also include wotkit credentials for unified login."""
+    """Override default user_update action to proxy the update to the wotkit. The code here is also copy pasted from the original user_update to add rollback functionality.
+    The procedure is first check user exists on wotkit (if the user doesn't exist, raise validation error).
+    Then update ckan, then update the wotkit. If wotkit update fails, rollback ckan. 
+    """
 
     #Get current user ID
     id = _get_or_bust(data_dict, 'id')
