@@ -256,7 +256,7 @@ def user_update(context, data_dict):
     # This should be ok since the above database update will rollback if there is an error
     try:
         updated_user = logic.action.update.user_update(context, data_dict)
-        _validate_user_data(updated_user)
+        _validate_update_user_data(updated_user)
         wotkit_update_data = {"email": updated_user["email"],
                               "firstname": updated_user["fullname"],
                               "lastname": " "}
@@ -281,6 +281,13 @@ def user_update(context, data_dict):
         
     context["defer_commit"] = prev_defer_commit
     return updated_user
+
+def _validate_update_user_data(user):
+    """TODO:  Need to figure out why we cannot use the function below"""
+    if not user["fullname"]:
+       raise Exception("Fullname is required")
+    if not user["email"]:
+       raise Exception("Email is required")
 
 def _validate_user_data(user):    
     """Used for user update and create to check that required fields are set. Raises Exception if any fields are missing"""
