@@ -56,7 +56,9 @@ class WotkitPlugin(SingletonPlugin,tk.DefaultDatasetForm):
     """ Search filter """
 
     def before_search(self, search_params):
-        search_params['fq'] = u'+extras_pkg_invisible:False, '+search_params['fq'];
+        search_params['fq'] = u'+extras_pkg_invisible:False, , ' 
+                                + search_params['fq'];
+
         pprint.pprint(search_params);
 
         return search_params
@@ -92,21 +94,19 @@ class WotkitPlugin(SingletonPlugin,tk.DefaultDatasetForm):
 
         schema.update({
             'pkg_invisible': [
-                tk.get_validator('boolean_validator'),
+                tk.get_validator('ignore_missing'),
                 tk.get_converter('convert_to_extras')
                 ],
-            # 'pkg_creator' : [
-            #     tk.get_validator('ignore_missing'),
-            #     tk.get_converter('convert_to_extras')
-            #     ]
+            'pkg_creator' : [
+                tk.get_validator('ignore_missing'),
+                tk.get_converter('convert_to_extras')
+                ]
             })
 
         # Drop reserved key (pkg_creator) if it is used in the extra fields
         # if 'pkg_creator' in schema:
         #     print "check!!!!!!!"
         #     del schema['pkg_creator']
-
-        pprint.pprint(schema)
 
         return schema
 
