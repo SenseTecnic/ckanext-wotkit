@@ -1,19 +1,24 @@
 import os
 from logging import getLogger
 
+import ckan.plugins.toolkit as tk
+import ckan.model as model
+from ckan.common import OrderedDict, _, json, request, c, g, response
+
 from pylons import request
 from genshi.input import HTML
 from genshi.filters.transform import Transformer
 
 from ckan.plugins import implements, SingletonPlugin, toolkit
-
 from ckan.plugins import (
                           IRoutes,
                           IActions,
                           IConfigurable,
                           IConfigurer,
                           ITemplateHelpers,
-                          IMiddleware
+                          IMiddleware,
+                          IDatasetForm,
+                          IPackageController
                           )
 
 import ckanext.wotkit.actions
@@ -27,7 +32,10 @@ from billing_log_middleware import BillingLogMiddleware
 
 from routes.mapper import SubMapper
 
-class WotkitPlugin(SingletonPlugin):
+def get_current_user():
+    return c.userobj
+
+class WotkitPlugin(SingletonPlugin,tk.DefaultDatasetForm):
     """This plugin contains functions to access Wotkit
     """
     
@@ -37,7 +45,88 @@ class WotkitPlugin(SingletonPlugin):
     implements(IRoutes, inherit=True)
     implements(IActions, inherit=True)
     implements(IMiddleware, inherit=True)
-    
+    implements(IDatasetForm, inherit=True)
+    implements(IPackageController, inherit=True)
+
+
+    #-----------------------------------------#
+    """ Sensor visibility extension section """
+    #-----------------------------------------#
+
+    """ Search filter """
+
+    def before_search(self, search_params):
+        search_params['fq'] = u'+extras_pkg_invisible:False, '+search_params['fq'];
+        pprint.pprint(search_params);
+
+        return search_params
+
+    """ Dataset schema invisibility field """
+
+    def is_fallback(self):
+        # Return True to register this plugin as the default handler for
+        # package types not handled by any other IDatasetForm plugin.
+        return True
+
+    def package_types(self):
+        # This plugin doesn't handle any special package types, it just
+        # registers itself as the default (above).
+        return []
+
+    def create_package_schema(self):
+        schema = super(WotkitPlugin, self).create_package_schema()
+        schema.update({
+            'pkg_invisible': [
+                tk.get_validator('ignore_missing'),
+                tk.get_converter('convert_to_extras')
+                ],
+            'pkg_creator' : [
+                tk.get_validator('ignore_missing'),
+                tk.get_converter('convert_to_extras')
+                ]
+            })
+        return schema
+
+    def update_package_schema(self):
+        schema = super(WotkitPlugin, self).update_package_schema()
+
+        schema.update({
+            'pkg_invisible': [
+                tk.get_validator('boolean_validator'),
+                tk.get_converter('convert_to_extras')
+                ],
+            # 'pkg_creator' : [
+            #     tk.get_validator('ignore_missing'),
+            #     tk.get_converter('convert_to_extras')
+            #     ]
+            })
+
+        # Drop reserved key (pkg_creator) if it is used in the extra fields
+        # if 'pkg_creator' in schema:
+        #     print "check!!!!!!!"
+        #     del schema['pkg_creator']
+
+        pprint.pprint(schema)
+
+        return schema
+
+    def show_package_schema(self):
+        schema = super(WotkitPlugin, self).show_package_schema()
+        schema.update({
+            'pkg_invisible': [
+                tk.get_converter('convert_from_extras'),
+                tk.get_validator('ignore_missing')
+                ],
+            'pkg_creator' : [
+                tk.get_converter('convert_from_extras'),
+                tk.get_validator('ignore_missing')
+                ]
+            })
+        return schema
+
+    """ End of dataset visibility section
+    """
+
     def make_middleware(self, app, config):
         """IMiddleware extension. This essentially plugs in before the application starts (where we intercept request/response for billing)"""
         app = BillingLogMiddleware(app, config)
@@ -49,7 +138,8 @@ class WotkitPlugin(SingletonPlugin):
         """ From html templates, we can access these functions through h: 
         example: h.wotkit_url(), h.logout_all_url()
         """
-        return {'wotkit_url': config_globals.get_wotkit_url,
+        return {'get_current_user' : get_current_user,
+                'wotkit_url': config_globals.get_wotkit_url,
                 'wotkit_api_url': config_globals.get_wotkit_api_url,
                 'logout_all_url': config_globals.get_logout_all_url,
                 'logout_success_url:': config_globals.get_logout_success_url,
@@ -118,4 +208,5 @@ class WotkitPlugin(SingletonPlugin):
         #map.connect('/package/new', controller='package_formalchemy', action='new')
         #map.connect('/package/edit/{id}', controller='package_formalchemy', action='edit')
         return map
-    
+
+
