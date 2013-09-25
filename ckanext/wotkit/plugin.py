@@ -1,6 +1,6 @@
 import os
 import ckan.lib.base as base
-from logging import getLogger
+from logging import getLogger 
 
 import ckan.plugins.toolkit as tk
 import ckan.model as model
@@ -19,11 +19,14 @@ from ckan.plugins import (
                           ITemplateHelpers,
                           IMiddleware,
                           IDatasetForm,
+                          IAuthFunctions,
                           # IMapper,
                           IPackageController
                           )
 
 import ckanext.wotkit.actions
+import ckanext.wotkit.auth
+auth = ckanext.wotkit.auth
 
 log = getLogger(__name__)
 
@@ -49,53 +52,40 @@ class WotkitPlugin(SingletonPlugin,tk.DefaultDatasetForm):
     implements(IMiddleware, inherit=True)
     implements(IDatasetForm, inherit=True)
     implements(IPackageController, inherit=True)
+    implements(IAuthFunctions, inherit=True)
     # implements(IMapper, inherit=True)
 
     #-----------------------------------------#
     """ Sensor visibility extension section """
     #-----------------------------------------#
-    """ Helper functions """
 
-    def check_view_privilege(self, pkg_dict):
+    """ Search and view filter """
+
+    def get_auth_functions(self):
+        return {'invisible_package_search' : auth.invisible_package_search,
+                'invisible_package_show' : auth.invisible_package_show
+                }
+
+    def after_show(self, context, pkg_dict):
         pprint.pprint(pkg_dict)
-
-        is_invisible = 'False' # This is the default
-        pkg_owner = ''
-
-        for x in pkg_dict['extras']:
-            if x['key'] == 'pkg_creator':
-                pkg_owner = x['value']
-            elif x['key'] == 'pkg_invisible':
-                is_invisible = x['value']
-
-        # Throw 404 errors if user is not allowed to view the dataset
-        if c.userobj is None:
-            if is_invisible == 'True':
-                base.abort(404, _('Dataset not found'))
-        else: 
-            if pkg_owner != c.userobj.id and is_invisible == 'True': 
-                base.abort(404, _('Dataset not found'))
-
-        # print 'owner: ' + pkg_owner + ' current user: ' + c.userobj.id
-        # print 'invisible: ' + is_invisible
-
-    """ Search filter """
-
-    def before_search(self, search_params):
-        # Only show datasets that are NOT invisible OR are created by the current user
-        if c.userobj is None:
-            search_params['fq'] = u'( +extras_pkg_invisible:False ) AND ' + search_params['fq'];
-        else:
-            search_params['fq'] = u'( +extras_pkg_invisible:False, OR +extras_pkg_creator:"'+c.userobj.id+'" ) AND ' + search_params['fq'];
-
-        return search_params
-
-    """ Package view page filter """
-
-    def before_view(self, pkg_dict):
-        self.check_view_privilege(pkg_dict)
-
+        tk.check_access('invisible_package_show', context, pkg_dict)
         return pkg_dict
+
+    # def before_view(self, pkg_dict):
+    #     pprint.pprint(pkg_dict)
+    #     if not self.check_view_privilege(pkg_dict):
+    #         base.abort(404, _('Dataset not found'))
+    #     return pkg_dict
+
+
+    # def before_search(self, search_params):
+    #     # Only show datasets that are NOT invisible OR are created by the current user
+    #     if c.userobj is None:
+    #         search_params['fq'] = u'( +extras_pkg_invisible:False ) AND ' + search_params['fq'];
+    #     else:
+    #         search_params['fq'] = u'( +extras_pkg_invisible:False, OR +extras_pkg_creator:"'+c.userobj.id+'" ) AND ' + search_params['fq'];
+
+    #     return search_params
 
     """ Dataset schema invisibility field """
 
@@ -125,7 +115,6 @@ class WotkitPlugin(SingletonPlugin,tk.DefaultDatasetForm):
 
     def update_package_schema(self):
         schema = super(WotkitPlugin, self).update_package_schema()
-
         schema.update({
             'pkg_invisible': [
                 tk.get_validator('ignore_missing'),
