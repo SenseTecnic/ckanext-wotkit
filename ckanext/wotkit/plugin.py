@@ -1,4 +1,5 @@
 import os
+import ckan.lib.base as base
 from logging import getLogger
 
 import ckan.plugins.toolkit as tk
@@ -18,6 +19,7 @@ from ckan.plugins import (
                           ITemplateHelpers,
                           IMiddleware,
                           IDatasetForm,
+                          # IMapper,
                           IPackageController
                           )
 
@@ -47,21 +49,53 @@ class WotkitPlugin(SingletonPlugin,tk.DefaultDatasetForm):
     implements(IMiddleware, inherit=True)
     implements(IDatasetForm, inherit=True)
     implements(IPackageController, inherit=True)
-
+    # implements(IMapper, inherit=True)
 
     #-----------------------------------------#
     """ Sensor visibility extension section """
     #-----------------------------------------#
+    """ Helper functions """
+
+    def check_view_privilege(self, pkg_dict):
+        pprint.pprint(pkg_dict)
+
+        is_invisible = 'False' # This is the default
+        pkg_owner = ''
+
+        for x in pkg_dict['extras']:
+            if x['key'] == 'pkg_creator':
+                pkg_owner = x['value']
+            elif x['key'] == 'pkg_invisible':
+                is_invisible = x['value']
+
+        # Throw 404 errors if user is not allowed to view the dataset
+        if c.userobj is None:
+            if is_invisible == 'True':
+                base.abort(404, _('Dataset not found'))
+        else: 
+            if pkg_owner != c.userobj.id and is_invisible == 'True': 
+                base.abort(404, _('Dataset not found'))
+
+        # print 'owner: ' + pkg_owner + ' current user: ' + c.userobj.id
+        # print 'invisible: ' + is_invisible
 
     """ Search filter """
 
     def before_search(self, search_params):
-        search_params['fq'] = u'+extras_pkg_invisible:False, , ' 
-                                + search_params['fq'];
-
-        pprint.pprint(search_params);
+        # Only show datasets that are NOT invisible OR are created by the current user
+        if c.userobj is None:
+            search_params['fq'] = u'( +extras_pkg_invisible:False ) AND ' + search_params['fq'];
+        else:
+            search_params['fq'] = u'( +extras_pkg_invisible:False, OR +extras_pkg_creator:"'+c.userobj.id+'" ) AND ' + search_params['fq'];
 
         return search_params
+
+    """ Package view page filter """
+
+    def before_view(self, pkg_dict):
+        self.check_view_privilege(pkg_dict)
+
+        return pkg_dict
 
     """ Dataset schema invisibility field """
 
@@ -103,11 +137,6 @@ class WotkitPlugin(SingletonPlugin,tk.DefaultDatasetForm):
                 ]
             })
 
-        # Drop reserved key (pkg_creator) if it is used in the extra fields
-        # if 'pkg_creator' in schema:
-        #     print "check!!!!!!!"
-        #     del schema['pkg_creator']
-
         return schema
 
     def show_package_schema(self):
@@ -123,6 +152,14 @@ class WotkitPlugin(SingletonPlugin,tk.DefaultDatasetForm):
                 ]
             })
         return schema
+
+    # def before_update(self, mapper, connection, instance):
+    #     print "MAPPER: "
+    #     # pprint.pprint(mapper)
+
+    # def after_update(self, mapper, connection, instance):
+    #     print "MAPPER: "
+    #     pprint.pprint(mapper)
 
     """ End of dataset visibility section
     """
@@ -168,7 +205,6 @@ class WotkitPlugin(SingletonPlugin,tk.DefaultDatasetForm):
                 "user_show": ckanext.wotkit.actions.user_show,
                 "tag_counts": ckanext.wotkit.actions.tag_counts,
                 "user_get": ckanext.wotkit.actions.user_get}
-    
     
     def before_map(self, map):
         """This IRoutes implementation overrides the standard behavior of user information to make unified login work.
