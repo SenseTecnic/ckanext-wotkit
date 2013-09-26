@@ -18,14 +18,21 @@ def _package_invisible_check_auth(context, pkg_dict):
 				'msg': p.toolkit._('User not authorized to view or update package')
 			}
 	else:
-		if pkg_dict['pkg_creator'] == user.id:
-			return {'success' : True}
-		else:
+		if 'pkg_creator' not in pkg_dict:
 			return {
 				'success': False,
 				'msg': p.toolkit._('User {0} not authorized to view or update package {1}'
 						.format(str(user), pkg_dict['id']))
 			}
+		else:
+			if pkg_dict['pkg_creator'] == user.id:
+				return {'success' : True}
+			else:
+				return {
+					'success': False,
+					'msg': p.toolkit._('User {0} not authorized to view or update package {1}'
+							.format(str(user), pkg_dict['id']))
+				}
 
 def invisible_package_search(context, pkg_dict):
 	return _package_invisible_check_auth(context, pkg_dict)

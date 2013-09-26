@@ -84,6 +84,12 @@
 <div class="control-group">
   <label for="field-pkg_invisible" class="control-label">Hide dataset</label>
   <div class="controls">
+    <span class="info-block info-inline">
+      <i class="icon-info-sign"></i>
+      {% trans %}
+        This will set this dataset to be invisible to everyone else except you
+      {% endtrans %}
+    </span>
     <select id="field-pkg_invisible" name="pkg_invisible">
       <option value="False">No</option>
       <option value="True" {% if data.pkg_invisible == "True" %}selected="selected"{% endif %} >Yes</option>
