@@ -62,7 +62,9 @@ class WotkitPlugin(SingletonPlugin,tk.DefaultDatasetForm):
     """ Search and view filter """
 
     def before_search(self, search_params):
-        if search_params['q'] != '':
+        pprint.pprint(search_params)
+
+        if 'q' in search_params:
             other_params = ' AND ' + search_params['q']
         else:
             other_params = ''
@@ -106,8 +108,24 @@ class WotkitPlugin(SingletonPlugin,tk.DefaultDatasetForm):
             'pkg_creator' : [
                 tk.get_validator('ignore_missing'),
                 tk.get_converter('convert_to_extras')
-                ]
-            })
+                ],
+            'extras' : {
+                'id' : [tk.get_validator('ignore')],
+                'key' : [
+                            tk.get_validator('ignore_missing'),
+                            unicode,
+                            validators.validate_creator_field,
+                            validators.validate_invisible_field
+                        ],
+                'value' : [ 
+                            tk.get_validator('ignore_missing'), 
+                          ],
+                'state' : [tk.get_validator('ignore')],
+                'deleted' : [tk.get_validator('ignore_missing')],
+                'revision_timestamp' : [tk.get_validator('ignore')]
+            }
+        })
+
         return schema
 
     def update_package_schema(self):
