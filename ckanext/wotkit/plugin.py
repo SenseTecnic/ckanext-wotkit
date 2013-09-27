@@ -72,12 +72,13 @@ class WotkitPlugin(SingletonPlugin,tk.DefaultDatasetForm):
             search_params['q'] = '( *:* NOT extras_pkg_invisible:"True" )' + other_params
         else:
             search_params['q'] = '(( *:* NOT extras_pkg_invisible:"True" ) OR ( +extras_pkg_creator:"'+c.userobj.id+'" ))' + other_params
-
+        
         return search_params
 
     def get_auth_functions(self):
         return {'invisible_package_search' : auth.invisible_package_search,
-                'invisible_package_show' : auth.invisible_package_show
+                'invisible_package_show' : auth.invisible_package_show,
+                'package_update' : auth.require_creator_to_update
                 }
 
     def after_show(self, context, pkg_dict):
@@ -128,7 +129,6 @@ class WotkitPlugin(SingletonPlugin,tk.DefaultDatasetForm):
 
     def update_package_schema(self):
         schema = super(WotkitPlugin, self).update_package_schema()
-
         schema.update({
             'pkg_invisible': [
                 tk.get_validator('ignore_missing'),
@@ -147,7 +147,7 @@ class WotkitPlugin(SingletonPlugin,tk.DefaultDatasetForm):
                             validators.validate_invisible_field
                         ],
                 'value' : [ 
-                            tk.get_validator('ignore_missing'), 
+                            tk.get_validator('ignore_missing')
                           ],
                 'state' : [tk.get_validator('ignore')],
                 'deleted' : [tk.get_validator('ignore_missing')],

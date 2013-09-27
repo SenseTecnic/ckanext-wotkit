@@ -39,3 +39,20 @@ def invisible_package_search(context, pkg_dict):
 
 def invisible_package_show(context, pkg_dict):
 	return _package_invisible_check_auth(context, pkg_dict)
+
+def require_creator_to_update(context, pkg_dict):
+	user = c.userobj
+	
+	# If user is not logged in, return false
+	if user is None:
+		return {'success': False}
+	
+	# If creator field is not set (legacy data), return true
+	if 'pkg_creator' not in c.pkg_dict:
+		return {'success' : True}
+
+	# If current user is the creator, return true
+	if user.id != c.pkg_dict['pkg_creator']:
+		return {'success': False}
+	else:
+		return {'success' : True}
