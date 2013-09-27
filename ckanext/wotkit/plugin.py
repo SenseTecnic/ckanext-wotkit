@@ -62,9 +62,7 @@ class WotkitPlugin(SingletonPlugin,tk.DefaultDatasetForm):
     """ Search and view filter """
 
     def before_search(self, search_params):
-        pprint.pprint(search_params)
-
-        if 'q' in search_params:
+        if 'q' in search_params and search_params['q'] != '':
             other_params = ' AND ' + search_params['q']
         else:
             other_params = ''
