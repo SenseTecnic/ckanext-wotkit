@@ -79,7 +79,21 @@
     </select>
   </div>
 </div>
+
+{# ===================================== #}
+{# Bug fix for setting organization view #}
+{# ===================================== #}
+
+{% elif dataset_has_organization %}
+  {% if data.owner_org  %}
+    {% set owner_org = data.owner_org %}
+  {% else %}
+    {% set owner_org = data.group_id %}
+  {% endif %}
+  <input id="field-organization" type="hidden" name="owner_org" value="{{ owner_org }}" />
 {% endif %}
+
+{# ===================================== #}
 
 <div class="control-group">
   <label for="field-pkg_invisible" class="control-label">Hide dataset</label>
