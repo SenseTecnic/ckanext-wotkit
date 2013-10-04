@@ -33,8 +33,6 @@ NotAuthorized = logic.NotAuthorized
 ValidationError = logic.ValidationError
 validators = ckanext.wotkit.validators
 
-import pprint
-
 DataError = dictization_functions.DataError
 unflatten = dictization_functions.unflatten
 
@@ -149,9 +147,7 @@ class WotkitUserController(UserController):
                           validators.name_validator, # altered validator
                           tk.get_validator("user_name_validator"), 
                           unicode]
-
-        pprint.pprint(schema)
-
+                          
     def _new_form_to_db_schema(self):
         """
         Defines a custom schema that adds optional wotkit fields to the form.
