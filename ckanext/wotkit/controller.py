@@ -16,6 +16,9 @@ import ckan.lib.mailer as mailer
 import ckan.lib.navl.dictization_functions as dictization_functions
 
 from ckan.common import _, session, c, g, request, response
+import ckanext.wotkit.validators
+import ckan.plugins.toolkit as tk
+
 
 log = logging.getLogger(__name__)
 
@@ -28,6 +31,9 @@ get_action = logic.get_action
 NotFound = logic.NotFound
 NotAuthorized = logic.NotAuthorized
 ValidationError = logic.ValidationError
+validators = ckanext.wotkit.validators
+
+import pprint
 
 DataError = dictization_functions.DataError
 unflatten = dictization_functions.unflatten
@@ -133,8 +139,18 @@ class WotkitUserController(UserController):
             routes.redirect_to(str(url))
 
     def _add_wotkit_credentials_to_schema(self, schema):
+
+
         """ Adds timezone to user schema for parameters to be validated on form submit"""
         schema['timezone'] = [ignore_missing, unicode]
+
+        """ Changes the min name length to be compatible with wotkit """
+        schema['name'] = [tk.get_validator("not_empty"),
+                          validators.name_validator, # altered validator
+                          tk.get_validator("user_name_validator"), 
+                          unicode]
+
+        pprint.pprint(schema)
 
     def _new_form_to_db_schema(self):
         """
