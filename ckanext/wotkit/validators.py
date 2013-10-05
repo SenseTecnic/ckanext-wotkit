@@ -34,16 +34,15 @@ name_match = re.compile('[a-z0-9_\-]*$')
 def name_validator(val, context):
 	WOTKIT_MIN_NAME_LENGTH = 4
 
-    # check basic textual rules
-    if val in ['new', 'edit', 'search']:
-        raise Invalid(_('That name cannot be used'))
+	# check basic textual rules
+	if val in ['new', 'edit', 'search']:
+    	raise Invalid(_('That name cannot be used'))
 
     if len(val) < WOTKIT_MIN_NAME_LENGTH:
-        raise Invalid(_('Name must be at least %s characters long') % WOTKIT_MIN_NAME_LENGTH)
+    	raise Invalid(_('Name must be at least %s characters long') % WOTKIT_MIN_NAME_LENGTH)
     if len(val) > PACKAGE_NAME_MAX_LENGTH:
-        raise Invalid(_('Name must be a maximum of %i characters long') % \
-                      PACKAGE_NAME_MAX_LENGTH)
+    	raise Invalid(_('Name must be a maximum of %i characters long') % PACKAGE_NAME_MAX_LENGTH)
     if not name_match.match(val):
-        raise Invalid(_('Url must be purely lowercase alphanumeric '
+    	raise Invalid(_('Url must be purely lowercase alphanumeric '
                         '(ascii) characters and these symbols: -_'))
-    return val
+	return val
