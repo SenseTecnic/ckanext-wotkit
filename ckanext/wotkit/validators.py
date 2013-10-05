@@ -19,16 +19,16 @@ missing = df.missing
 
 # Makes sure the pkg_creator key is set to the current user ID
 def validate_creator_field(key, data, errors, context):
-    if data[key] == 'pkg_creator':
-    	# Set the value field of the pkg_creator extras data to the current user id
-    	data[('extras', key[1], 'value')] = c.userobj.id
-   	pass
+	if data[key] == 'pkg_creator':
+		# Set the value field of the pkg_creator extras data to the current user id
+		data[('extras', key[1], 'value')] = c.userobj.id
+	pass
 
 def validate_invisible_field(key, data, errors, context):
     if data[key] == 'pkg_invisible':
-    	if data[('extras', key[1], 'value')] != ( True or False ):
-    		data[('extras', key[1], 'value')] = False
-    pass
+		if data[('extras', key[1], 'value')] != ( True or False ):
+			data[('extras', key[1], 'value')] = False
+	pass
 
 name_match = re.compile('[a-z0-9_\-]*$')
 def name_validator(val, context):
@@ -36,13 +36,13 @@ def name_validator(val, context):
 
 	# check basic textual rules
 	if val in ['new', 'edit', 'search']:
-    	raise Invalid(_('That name cannot be used'))
+		raise Invalid(_('That name cannot be used'))
 
-    if len(val) < WOTKIT_MIN_NAME_LENGTH:
-    	raise Invalid(_('Name must be at least %s characters long') % WOTKIT_MIN_NAME_LENGTH)
-    if len(val) > PACKAGE_NAME_MAX_LENGTH:
-    	raise Invalid(_('Name must be a maximum of %i characters long') % PACKAGE_NAME_MAX_LENGTH)
-    if not name_match.match(val):
-    	raise Invalid(_('Url must be purely lowercase alphanumeric '
+	if len(val) < WOTKIT_MIN_NAME_LENGTH:
+		raise Invalid(_('Name must be at least %s characters long') % WOTKIT_MIN_NAME_LENGTH)
+	if len(val) > PACKAGE_NAME_MAX_LENGTH:
+		raise Invalid(_('Name must be a maximum of %i characters long') % PACKAGE_NAME_MAX_LENGTH)
+	if not name_match.match(val):
+		raise Invalid(_('Url must be purely lowercase alphanumeric '
                         '(ascii) characters and these symbols: -_'))
 	return val
