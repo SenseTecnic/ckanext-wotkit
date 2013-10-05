@@ -22,13 +22,11 @@ def validate_creator_field(key, data, errors, context):
 	if data[key] == 'pkg_creator':
 		# Set the value field of the pkg_creator extras data to the current user id
 		data[('extras', key[1], 'value')] = c.userobj.id
-	pass
 
 def validate_invisible_field(key, data, errors, context):
     if data[key] == 'pkg_invisible':
 		if data[('extras', key[1], 'value')] != ( True or False ):
 			data[('extras', key[1], 'value')] = False
-	pass
 
 name_match = re.compile('[a-z0-9_\-]*$')
 def name_validator(val, context):
