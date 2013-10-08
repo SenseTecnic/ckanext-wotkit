@@ -101,28 +101,23 @@ class WotkitPlugin(SingletonPlugin,tk.DefaultDatasetForm):
         schema.update({
             'pkg_invisible': [
                 tk.get_validator('ignore_missing'),
-                tk.get_converter('convert_to_extras')
+                validators.convert_to_extras_custom,
                 ],
             'pkg_creator' : [
                 tk.get_validator('ignore_missing'),
-                tk.get_converter('convert_to_extras')
+                validators.convert_to_extras_custom,
                 ],
             'extras' : {
                 'id' : [tk.get_validator('ignore')],
-                'key' : [
-                            tk.get_validator('ignore_missing'),
-                            unicode,
-                            validators.validate_creator_field,
-                            validators.validate_invisible_field
-                        ],
-                'value' : [ 
-                            tk.get_validator('ignore_missing'), 
-                          ],
+                'key' : [ tk.get_validator('ignore_missing'), unicode],
+                # changed this to fix the missing value alert on delete
+                'value' : [ tk.get_validator('ignore_missing')],
                 'state' : [tk.get_validator('ignore')],
                 'deleted' : [tk.get_validator('ignore_missing')],
                 'revision_timestamp' : [tk.get_validator('ignore')]
             }
         })
+
 
         return schema
 
@@ -131,12 +126,10 @@ class WotkitPlugin(SingletonPlugin,tk.DefaultDatasetForm):
         schema.update({
             'pkg_invisible': [
                 tk.get_validator('ignore_missing'),
-                #tk.get_converter('convert_to_extras'),
                 validators.convert_to_extras_custom,
                 ],
             'pkg_creator' : [
                 tk.get_validator('ignore_missing'),
-                #tk.get_converter('convert_to_extras'),
                 validators.convert_to_extras_custom,
                 ],
             'extras' : {
