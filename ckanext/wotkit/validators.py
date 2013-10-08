@@ -5,6 +5,8 @@
 ###################################################
 import re
 import ckan.lib.navl.dictization_functions as df
+import ckan.plugins.toolkit as tk
+
 from ckan.common import OrderedDict, _, json, request, c, g, response
 from ckan.model import (MAX_TAG_LENGTH, MIN_TAG_LENGTH,
                         PACKAGE_NAME_MIN_LENGTH, PACKAGE_NAME_MAX_LENGTH,
@@ -18,15 +20,36 @@ Missing = df.Missing
 missing = df.missing
 
 # Makes sure the pkg_creator key is set to the current user ID
-def validate_creator_field(key, data, errors, context):
-	if data[key] == 'pkg_creator':
-		# Set the value field of the pkg_creator extras data to the current user id
-		data[('extras', key[1], 'value')] = c.userobj.id
+def convert_to_extras_custom(key, data, errors, context):
 
-def validate_invisible_field(key, data, errors, context):
-    if data[key] == 'pkg_invisible':
-		if data[('extras', key[1], 'value')] != ( True or False ):
-			data[('extras', key[1], 'value')] = False
+	# get the current number of extras field
+	unflattened = df.unflatten(data)
+
+	if("extras" in unflattened):
+		extras_count = len(unflattened['extras'])
+	else:
+		extras_count = 0
+
+	data.update({
+		('extras', (extras_count), 'id') : [tk.get_validator('ignore')],
+		('extras', (extras_count), 'revision_timestamp') : [tk.get_validator('ignore')],
+		('extras', (extras_count), 'state') : [tk.get_validator('ignore')],
+		('extras', (extras_count), 'deleted') : [], # this needs to be blank so the fields won't be deleted
+		})
+
+	if key[-1] == "pkg_creator":
+		data.update({
+			('extras', (extras_count), 'key') : key[-1],
+			('extras', (extras_count), 'value') : c.userobj.id
+			})
+	elif key[-1] == "pkg_invisible":
+		if data[key] != ( "True" or "False" ):
+			data[key] = "False"
+		data.update({
+			('extras', (extras_count), 'key') : key[-1],
+			('extras', (extras_count), 'value') : data[key]
+			})
+	pass
 
 name_match = re.compile('[a-z0-9_\-]*$')
 def name_validator(val, context):

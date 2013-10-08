@@ -76,8 +76,7 @@ class WotkitPlugin(SingletonPlugin,tk.DefaultDatasetForm):
         return search_params
 
     def get_auth_functions(self):
-        return {'invisible_package_search' : auth.invisible_package_search,
-                'invisible_package_show' : auth.invisible_package_show,
+        return {'invisible_package_show' : auth.invisible_package_show,
                 'package_update' : auth.require_creator_to_update
                 }
 
@@ -132,23 +131,19 @@ class WotkitPlugin(SingletonPlugin,tk.DefaultDatasetForm):
         schema.update({
             'pkg_invisible': [
                 tk.get_validator('ignore_missing'),
-                tk.get_converter('convert_to_extras')
+                #tk.get_converter('convert_to_extras'),
+                validators.convert_to_extras_custom,
                 ],
             'pkg_creator' : [
                 tk.get_validator('ignore_missing'),
-                tk.get_converter('convert_to_extras')
+                #tk.get_converter('convert_to_extras'),
+                validators.convert_to_extras_custom,
                 ],
             'extras' : {
                 'id' : [tk.get_validator('ignore')],
-                'key' : [
-                            tk.get_validator('ignore_missing'),
-                            unicode,
-                            validators.validate_creator_field,
-                            validators.validate_invisible_field
-                        ],
-                'value' : [ 
-                            tk.get_validator('ignore_missing')
-                          ],
+                'key' : [ tk.get_validator('ignore_missing'), unicode],
+                # changed this to fix the missing value alert on delete
+                'value' : [ tk.get_validator('ignore_missing')],
                 'state' : [tk.get_validator('ignore')],
                 'deleted' : [tk.get_validator('ignore_missing')],
                 'revision_timestamp' : [tk.get_validator('ignore')]
@@ -169,6 +164,7 @@ class WotkitPlugin(SingletonPlugin,tk.DefaultDatasetForm):
                 tk.get_validator('ignore_missing')
                 ]
             })
+
         return schema
 
     """ End of dataset visibility section

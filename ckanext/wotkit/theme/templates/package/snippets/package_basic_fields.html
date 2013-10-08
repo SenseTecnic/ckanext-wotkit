@@ -1,3 +1,5 @@
+{% ckan_extends %}
+
 {% import 'macros/form.html' as form %}
 
 {% block package_basic_fields_title %}
@@ -13,9 +15,7 @@
 {{ form.prepend('name', id='field-name', label=_('URL'), prepend=prefix, placeholder=_('eg. my-dataset'), value=data.name, error=errors.name, attrs=attrs) }}
 {% endblock %}
 
-{% block package_basic_fields_custom %}
-
-{% endblock %}
+{% block package_basic_fields_custom %}{% endblock %}
 
 {% block package_basic_fields_description %}
 {{ form.markdown('notes', id='field-notes', label=_('Description'), placeholder=_('eg. Some useful notes about the data'), value=data.notes, error=errors.notes) }}
@@ -111,7 +111,7 @@
   </div>
 </div>
 
-{% if show_visibility_selector and data.pkg_invisible == "False" %}
+{% if show_visibility_selector and data.pkg_invisible == ( "False" or None ) %}
   {% block package_metadata_fields_visibility %}
     <div class="control-group">
       <label for="field-private" class="control-label">Set Visibility</label>
@@ -131,5 +131,4 @@
 {% endif %}
 
 <input type="hidden" name="pkg_creator" id="field-pkg_creator" value="{{ h.get_current_user().id }}" />
-
 {% endblock %}
