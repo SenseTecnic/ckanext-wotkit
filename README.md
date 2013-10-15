@@ -24,4 +24,3 @@ Release 1.2:
 Release 1.4:
 * Added support for the option to set datasets to invisible. Only the dataset's creator may perform this change. Invisible datasets can only be viewed by the creator.
 * Made editing datasets only available to the dataset's creator.
-* 
