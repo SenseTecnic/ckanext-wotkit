@@ -160,7 +160,6 @@ def user_show(context, data_dict):
     user_dict['num_followers'] = logic.get_action('user_follower_count')(
             {'model': model, 'session': model.Session},
             {'id': user_dict['id']})
-    log.debug('override user show')
     #toolkit.get_action('user_show')(context, data_dict)
     # only check wotkit account if we need to
     if data_dict.get("link_wotkit", False):
@@ -174,7 +173,6 @@ def user_show(context, data_dict):
     #wotkit_dict = _get_action("user_wotkit_credentials")(context, data_dict)
     #user_dict["wotkit_id"] = wotkit_dict.get("wotkit_id", None)
     #user_dict["wotkit_password"] = wotkit_dict.get("wotkit_password", None)
-    log.debug('override user show done!!')
     return user_dict
 
 def user_create(context, data_dict):
