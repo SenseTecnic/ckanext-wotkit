@@ -202,8 +202,6 @@ class WotkitPlugin(SingletonPlugin,tk.DefaultDatasetForm):
         return {"user_update": ckanext.wotkit.actions.user_update,
                 "user_create": ckanext.wotkit.actions.user_create,
                 "user_show": ckanext.wotkit.actions.user_show,
-		"wotkit_harvest_module": ckanext.wotkit.actions.wotkit_harvest_module,
-                "wotkit_get_sensor_module_import": ckanext.wotkit.actions.wotkit_get_sensor_module_import,
                 "tag_counts": ckanext.wotkit.actions.tag_counts,
                 "user_get": ckanext.wotkit.actions.user_get}
     
