@@ -18,8 +18,11 @@ import ckan.lib.dictization
 from model import WotkitUser
 
 from ckan.plugins import toolkit
+import ckan.plugins.toolkit as toolkit
+
 import json
 import ckan.lib.search as search
+
 
 log = getLogger(__name__)
 _get_or_bust = logic.get_or_bust
@@ -109,8 +112,56 @@ def user_show(context, data_dict):
         If the user does not exist on the wotkit when link_wotkit is true, it raise a NotAuthorized.
     """
     # Call default user_show, which handles authorization
-    user_dict = logic.action.get.user_show(context, data_dict)
-    
+    #user_dict = logic.action.get.user_show(context, data_dict)
+    #user_dict = logic.get_action('user_show')(context, data_dict)
+    model = context['model']
+
+    id = data_dict.get('id',None)
+    provided_user = data_dict.get('user_obj',None)
+    if id:
+        user_obj = model.User.get(id)
+        context['user_obj'] = user_obj
+        if user_obj is None:
+            raise NotFound
+    elif provided_user:
+        context['user_obj'] = user_obj = provided_user
+    else:
+        raise NotFound
+
+    _check_access('user_show',context, data_dict)
+
+    user_dict = model_dictize.user_dictize(user_obj,context)
+
+    if context.get('return_minimal'):
+        return user_dict
+
+    revisions_q = model.Session.query(model.Revision
+            ).filter_by(author=user_obj.name)
+
+    revisions_list = []
+    for revision in revisions_q.limit(20).all():
+        revision_dict = logic.get_action('revision_show')(context,{'id':revision.id})
+        revision_dict['state'] = revision.state
+        revisions_list.append(revision_dict)
+    user_dict['activity'] = revisions_list
+
+    user_dict['datasets'] = []
+    dataset_q = model.Session.query(model.Package).join(model.PackageRole
+            ).filter_by(user=user_obj, role=model.Role.ADMIN
+            ).limit(50)
+
+    for dataset in dataset_q:
+        try:
+            dataset_dict = logic.get_action('package_show')(context, {'id': dataset.id})
+        except logic.NotAuthorized:
+            continue
+        user_dict['datasets'].append(dataset_dict)
+
+    user_dict['num_followers'] = logic.get_action('user_follower_count')(
+            {'model': model, 'session': model.Session},
+            {'id': user_dict['id']})
+    log.debug('override user show')
+    #toolkit.get_action('user_show')(context, data_dict)
     # only check wotkit account if we need to
     if data_dict.get("link_wotkit", False):
         wotkit_proxy = config_globals.get_wotkit_proxy()
@@ -123,6 +174,7 @@ def user_show(context, data_dict):
     #wotkit_dict = _get_action("user_wotkit_credentials")(context, data_dict)
     #user_dict["wotkit_id"] = wotkit_dict.get("wotkit_id", None)
     #user_dict["wotkit_password"] = wotkit_dict.get("wotkit_password", None)
+    log.debug('override user show done!!')
     return user_dict
 
 def user_create(context, data_dict):
@@ -182,15 +234,17 @@ def user_create(context, data_dict):
         'model': model,
         'user': context['user'],
         'defer_commit': True,
-        'session': session
+    	'ignore_auth': True,
+	'session': session
     }
     activity_dict = {
             'user_id': user.id,
             'object_id': user.id,
             'activity_type': 'new user',
             }
-    logic.get_action('activity_create')(activity_create_context,
-            activity_dict, ignore_auth=True)
+    #logic.get_action('activity_create')(activity_create_context,
+     #       activity_dict, ignore_auth=True)
+    logic.get_action('activity_create')(activity_create_context,activity_dict)
 
     if not context.get('defer_commit'):
         model.repo.commit()
@@ -202,6 +256,8 @@ def user_create(context, data_dict):
     # The context is copied so as not to clobber the caller's context dict.
     user_dictize_context = context.copy()
     user_dictize_context['keep_sensitive_data'] = True
+    #user_dictize_context['keep_apikey'] = True
+    #user_dictize_context['keep_email'] = True
     user_dict = model_dictize.user_dictize(user, user_dictize_context)
 
     context['user_obj'] = user
